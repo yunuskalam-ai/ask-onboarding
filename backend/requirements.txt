@@ -1,0 +1,2 @@
+# Runtime dependencies for the API. More are added phase by phase.
+pypdf==7.0.0
