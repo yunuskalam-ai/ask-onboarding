@@ -4,7 +4,7 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 **Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Claude (Anthropic API) · React + Vite + TypeScript · Docker Compose
 
-> Status: work in progress. Ingestion (upload, parse, chunk, embed, store) works; retrieval and chat come next.
+> Status: work in progress. Ingestion and retrieval work; the chat endpoint comes next.
 
 ## Quick start
 
