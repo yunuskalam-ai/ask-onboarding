@@ -50,6 +50,21 @@ def db(test_database_url):
         yield conn
 
 
+@pytest.fixture(scope="module")
+def indexed(test_database_url):
+    """All 18 sample docs indexed with the real embedding model.
+
+    Built once per test module (about 5 seconds), not per test.
+    """
+    from app.ingest.service import ingest_file
+
+    with connect(test_database_url) as conn:
+        conn.execute("TRUNCATE documents RESTART IDENTITY CASCADE")
+        for path in sorted(SAMPLE_DOCS.iterdir()):
+            ingest_file(conn, path.name, path.read_bytes())  # real embeddings
+        yield conn
+
+
 @pytest.fixture
 def other_db(test_database_url):
     """A second connection, to simulate a request running at the same time."""
