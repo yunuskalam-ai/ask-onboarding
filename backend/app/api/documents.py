@@ -1,10 +1,11 @@
-"""Document endpoints: upload a file and list documents with their status."""
+"""Document endpoints: upload, list with status, and read back for citations."""
 
 from datetime import datetime
 from typing import Annotated, Literal
+from urllib.parse import quote
 
 import psycopg
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 
 from app.config import settings
@@ -64,6 +65,49 @@ def upload_document(  # plain def: FastAPI runs it in a thread, so blocking DB c
 def list_documents(conn: Conn) -> list[DocumentOut]:
     rows = conn.execute(_SELECT + " ORDER BY d.filename").fetchall()
     return [DocumentOut(**row) for row in rows]
+
+
+class PageOut(BaseModel):
+    number: int | None
+    text: str
+
+
+class DocumentTextOut(BaseModel):
+    id: int
+    filename: str
+    file_type: Literal["pdf", "md", "txt"]
+    pages: list[PageOut]  # citation offsets point into these texts
+
+
+@router.get("/{document_id}")
+def get_document_text(document_id: int, conn: Conn) -> DocumentTextOut:
+    """The extracted text of a ready document, for showing a cited passage."""
+    row = conn.execute(
+        "SELECT id, filename, file_type, pages FROM documents WHERE id = %s AND status = 'ready'",
+        (document_id,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, "Document not found, or not ready yet.")
+    return DocumentTextOut(**row)
+
+
+_MEDIA_TYPES = {"pdf": "application/pdf", "md": "text/markdown; charset=utf-8", "txt": "text/plain; charset=utf-8"}
+
+
+@router.get("/{document_id}/file")
+def get_document_file(document_id: int, conn: Conn) -> Response:
+    """The original uploaded file. PDFs open in the browser's viewer (add #page=N)."""
+    row = conn.execute(
+        "SELECT filename, file_type, original FROM documents WHERE id = %s", (document_id,)
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, "Document not found.")
+    return Response(
+        content=bytes(row["original"]),
+        media_type=_MEDIA_TYPES[row["file_type"]],
+        # inline: show in the browser instead of downloading
+        headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(row['filename'])}"},
+    )
 
 
 def _process_in_background(database_url: str, document_id: int, embed: EmbedFn) -> None:
