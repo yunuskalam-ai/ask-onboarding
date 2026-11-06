@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from app.chat import llm
-from app.chat.llm import LLMError, stream_answer, stream_ollama
+from app.chat.llm import LLMError, TicketDraft, draft_ticket_ollama, parse_ticket_arguments, stream_answer, stream_ollama
 
 
 class FakeOllama(BaseHTTPRequestHandler):
@@ -19,12 +19,17 @@ class FakeOllama(BaseHTTPRequestHandler):
     lines: list[bytes] = []
     received: list[dict] = []
 
+    reply: dict | None = None  # if set, sent as one JSON body (non-streaming calls)
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         FakeOllama.received.append({"path": self.path, "body": body})
         self.send_response(self.status)
         self.send_header("Content-Type", "application/x-ndjson")
         self.end_headers()
+        if self.reply is not None:
+            self.wfile.write(json.dumps(self.reply).encode())
+            return
         for line in self.lines:
             self.wfile.write(line + b"\n")
 
@@ -34,7 +39,7 @@ class FakeOllama(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def ollama():
-    FakeOllama.status, FakeOllama.lines, FakeOllama.received = 200, [], []
+    FakeOllama.status, FakeOllama.lines, FakeOllama.received, FakeOllama.reply = 200, [], [], None
     server = HTTPServer(("127.0.0.1", 0), FakeOllama)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield FakeOllama, f"http://127.0.0.1:{server.server_port}"
@@ -111,3 +116,58 @@ def test_unknown_provider_is_rejected(monkeypatch):
 
     with pytest.raises(LLMError, match="Unknown LLM_PROVIDER"):
         list(stream_answer("SYS", []))
+
+
+# --- Ticket drafting through a tool call -------------------------------------
+
+def _tool_reply(name="create_ticket", arguments=None):
+    call = {"function": {"name": name, "arguments": arguments}}
+    return {"message": {"role": "assistant", "content": "", "tool_calls": [call]}, "done": True}
+
+
+def test_ticket_draft_comes_from_the_tool_call(ollama):
+    fake, url = ollama
+    fake.reply = _tool_reply(arguments={"title": " Stock options ", "summary": "Asks about stock options."})
+
+    draft = draft_ticket_ollama("Do employees get stock options?", base_url=url)
+
+    assert draft == TicketDraft(title="Stock options", summary="Asks about stock options.")
+    body = fake.received[0]["body"]
+    assert body["stream"] is False
+    assert body["tools"][0]["function"]["name"] == "create_ticket"
+    assert "Do employees get stock options?" in body["messages"][-1]["content"]
+
+
+def test_no_tool_call_gives_no_draft(ollama):
+    fake, url = ollama
+    fake.reply = {"message": {"role": "assistant", "content": "Sure, I can help!"}, "done": True}
+
+    assert draft_ticket_ollama("Q?", base_url=url) is None
+
+
+def test_a_different_tool_name_is_ignored(ollama):
+    fake, url = ollama
+    fake.reply = _tool_reply(name="delete_everything", arguments={"title": "x", "summary": "y"})
+
+    assert draft_ticket_ollama("Q?", base_url=url) is None
+
+
+@pytest.mark.parametrize(
+    "arguments, expected",
+    [
+        ({"title": "T", "summary": "S"}, TicketDraft("T", "S")),
+        ('{"title": "T", "summary": "S"}', TicketDraft("T", "S")),  # JSON string form
+        ({"title": "T"}, None),  # missing summary
+        ({"title": "  ", "summary": "S"}, None),  # blank title
+        ({"title": 5, "summary": "S"}, None),  # wrong type
+        ("not json", None),
+        (None, None),
+    ],
+)
+def test_tool_arguments_are_validated(arguments, expected):
+    assert parse_ticket_arguments(arguments) == expected
+
+
+def test_overlong_tool_arguments_are_cut():
+    draft = parse_ticket_arguments({"title": "t" * 500, "summary": "s" * 5000})
+    assert len(draft.title) == 120 and len(draft.summary) == 1000

@@ -33,3 +33,14 @@ CREATE TABLE IF NOT EXISTS chunks (
 CREATE INDEX IF NOT EXISTS chunks_embedding_idx ON chunks USING hnsw (embedding vector_cosine_ops);
 -- Full-text index for the keyword half of hybrid search (Phase 8).
 CREATE INDEX IF NOT EXISTS chunks_tsv_idx ON chunks USING gin (tsv);
+
+-- Help-desk tickets for questions the documents could not answer.
+CREATE TABLE IF NOT EXISTS tickets (
+    id          BIGSERIAL PRIMARY KEY,
+    title       TEXT NOT NULL,
+    question    TEXT NOT NULL,                  -- what the employee asked, word for word
+    summary     TEXT NOT NULL DEFAULT '',       -- drafted by the model, edited by the employee
+    user_name   TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
