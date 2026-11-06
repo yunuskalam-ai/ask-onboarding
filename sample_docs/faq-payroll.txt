@@ -1,0 +1,32 @@
+PAYROLL FAQ
+Owner: Payroll team (payroll@larkspur.example)
+
+Q: When do I get paid?
+A: You are paid monthly on the last working day of the month. If that day is a bank holiday, you are paid on the working day before.
+
+Q: Where can I see my payslip?
+A: Payslips are in PeopleHub under "My pay". They appear 3 working days before payday. We do not send paper payslips.
+
+Q: I started in the middle of the month. Will I get a full month's pay?
+A: No. Your first payslip covers the days from your start date to the end of that month. If you start after the 15th, your first pay may arrive with the following month's payroll, together with that month's salary.
+
+Q: What is the deadline for changes to this month's pay?
+A: Changes must reach the Payroll team by the 15th of the month. This includes bank details, pension contribution changes and salary sacrifice changes. Changes made after the 15th apply from the next month.
+
+Q: How do I change my bank details?
+A: Update them in PeopleHub under "My details". For security, Payroll will message you on Slack to confirm the change. We never ask you to change bank details by email.
+
+Q: I think my tax code is wrong. What do I do?
+A: Tax codes are set by HMRC, not by Larkspur Labs. Check your tax code in your HMRC personal tax account. If it is wrong, contact HMRC. Once HMRC sends us a new code, it is used on your next payslip.
+
+Q: When will I get my P60?
+A: P60s are published in PeopleHub by 31 May each year, for the tax year that ended on 5 April.
+
+Q: How are expenses paid?
+A: Approved expenses are added to your salary payment. Expenses approved by the 20th of the month are paid that month. See the Expenses and Travel Policy.
+
+Q: How do bonuses work?
+A: Bonuses, where your contract includes one, are paid with the March payroll. The referral bonus is paid with the payroll after your referred colleague passes probation.
+
+Q: I was overpaid or underpaid. What happens?
+A: Tell payroll@larkspur.example as soon as you notice. Underpayments are corrected with an extra payment within 5 working days. Overpayments are taken back from your next salary, or spread over up to 3 months if you ask.

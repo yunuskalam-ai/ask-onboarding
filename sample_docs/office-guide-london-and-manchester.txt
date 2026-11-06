@@ -1,0 +1,37 @@
+OFFICE GUIDE: LONDON AND MANCHESTER
+Owner: Workplace team (office@larkspur.example)
+
+=== LONDON (HEAD OFFICE) ===
+
+Address: 14 Cobalt Yard, London EC2A 4XY
+Nearest stations: Old Street (5 minutes walk) and Liverpool Street (12 minutes walk).
+We use floors 3 and 4. Reception is on the ground floor.
+
+Opening hours: 7:00 to 21:00, Monday to Friday. The building is closed at weekends and on UK bank holidays.
+
+Keycards: you get your keycard from reception on your first day. Lost keycards cost nothing to replace the first time. Tell office@larkspur.example straight away so the old card can be switched off.
+
+Desks: desks are not assigned. Book a desk in the "Desks" app (open it from Okta). Teams have neighbourhoods: Engineering on floor 4, everyone else on floor 3. Clear your desk at the end of the day; lockers are next to the kitchen on floor 3.
+
+Kitchen and food: tea, coffee, fruit and snacks are free every day. Breakfast is provided on Tuesdays and Thursdays from 8:30 to 10:00. Lunch is provided on Thursdays at 12:30.
+
+Bikes and parking: secure bike storage is in the basement, with 40 spaces and showers. There is no car parking at the office. The nearest public car park is on Tabernacle Street.
+
+Visitors: register visitors in the "Desks" app at least 24 hours before they arrive. Visitors must sign in at reception and wear a visitor badge. You must meet your visitor at reception.
+
+Fire safety: the fire alarm is tested every Wednesday at 11:00; you do not need to leave for the test. In a real alarm, leave by the stairs (never the lifts) and go to the assembly point in Cobalt Square, opposite the main entrance. Fire wardens wear yellow vests.
+
+First aid: first aid kits are in both kitchens. Trained first aiders are listed on the board next to reception.
+
+=== MANCHESTER ===
+
+Address: 2nd floor, 88 Mill Lane, Manchester M1 3FZ
+Nearest station: Manchester Piccadilly (8 minutes walk).
+Opening hours: 8:00 to 19:00, Monday to Friday.
+
+The Manchester office has 40 desks. Book them in the same "Desks" app. Tea and coffee are free; lunch is provided on Tuesdays at 12:30. There are 6 bike spaces in the courtyard and no car parking.
+
+Fire assembly point: the car park at the back of the building on Mill Lane.
+
+=== LOST PROPERTY ===
+Hand in anything you find at reception. Unclaimed items are given to charity after 30 days.
