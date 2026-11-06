@@ -19,7 +19,7 @@ from app.config import settings
 @lru_cache(maxsize=1)
 def _model() -> TextEmbedding:
     # Loading takes a few seconds, so we do it once per process.
-    return TextEmbedding(settings.embedding_model)
+    return TextEmbedding(settings.embedding_model, cache_dir=settings.embedding_cache_dir)
 
 
 def embed_passages(texts: list[str]) -> list[np.ndarray]:
