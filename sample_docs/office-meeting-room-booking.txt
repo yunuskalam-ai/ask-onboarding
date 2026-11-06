@@ -1,0 +1,33 @@
+MEETING ROOMS: HOW TO BOOK
+Owner: Workplace team (office@larkspur.example)
+
+HOW TO BOOK
+Book meeting rooms in Google Calendar. Create an event, click "Rooms" and choose a room.
+Rooms are named after birds.
+
+LONDON ROOMS
+Room       Floor   Seats   Equipment
+Wren       3       4       TV screen
+Robin      3       4       TV screen
+Heron      3       8       TV screen, whiteboard
+Kestrel    4       12      Video conferencing, whiteboard
+Osprey     4       20      Boardroom, video conferencing
+
+MANCHESTER ROOMS
+Room       Seats   Equipment
+Swift      6       Video conferencing
+Lark       10      Video conferencing, whiteboard
+
+BOOKING RULES
+- You can book a room for up to 2 hours at a time.
+- Osprey (the boardroom) needs approval from the office manager. Email office@larkspur.example with the date, time and reason.
+- If nobody checks in on the room screen within 10 minutes of the start time, the booking is released automatically.
+- Do not book a room for a recurring meeting for more than 3 months ahead.
+- Phone booths on each floor cannot be booked. Use them for up to 30 minutes.
+
+VIDEO CALLS
+Kestrel, Osprey, Swift and Lark have Google Meet hardware. Add the room to your calendar event and tap "Join" on the room's touch panel.
+If the equipment does not work, post in #it-help with the room name.
+
+AFTER YOUR MEETING
+Wipe the whiteboard, take your cups to the kitchen and leave the room on time for the next booking.

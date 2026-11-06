@@ -26,7 +26,14 @@ Only the database runs at this stage. The API and web app are added in later pha
 | `frontend/` | React app: Upload, Chat and Tickets pages |
 | `eval/` | 20-question evaluation set and scoring script |
 | `sample_docs/` | Sample company documents, loaded on first start |
+| `scripts/` | Helper scripts, such as the generator for the sample PDFs |
 | `db/init.sql` | Enables the pgvector extension |
+
+## Sample data
+
+`sample_docs/` holds 18 documents for **Larkspur Labs**, a made-up 300-person software company. There are 12 Markdown files, 4 text files and 2 multi-page PDFs, covering the employee handbook, the engineering wiki, IT guides and office information. Every name, address and email in them is fictional (`*.example` domains).
+
+Regenerate the PDFs with `pip install fpdf2==2.8.3 && python scripts/make_sample_pdfs.py`.
 
 ## Docs
 
