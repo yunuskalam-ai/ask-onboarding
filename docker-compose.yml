@@ -1,5 +1,5 @@
-# Ask Onboarding — local stack.
-# Phase 0: database only. The api and web services are added in later phases.
+# Ask Onboarding — local stack. Start everything with: docker compose up
+# The web service is added in Phase 4.
 services:
   db:
     image: pgvector/pgvector:0.8.0-pg16
@@ -15,6 +15,26 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    env_file:
+      - path: .env
+        required: false # the app starts without it; answering questions needs the API key
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ask}:${POSTGRES_PASSWORD:-ask}@db:5432/${POSTGRES_DB:-ask_onboarding}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sample_docs:/app/sample_docs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
       timeout: 3s
       retries: 10
 

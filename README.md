@@ -4,7 +4,7 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 **Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Claude (Anthropic API) · React + Vite + TypeScript · Docker Compose
 
-> Status: work in progress (Phase 0, project setup).
+> Status: work in progress. Ingestion (upload, parse, chunk, embed, store) works; retrieval and chat come next.
 
 ## Quick start
 
@@ -15,7 +15,26 @@ cp .env.example .env        # then set ANTHROPIC_API_KEY
 docker compose up
 ```
 
-Only the database runs at this stage. The API and web app are added in later phases.
+This starts Postgres (with pgvector) and the API. The web app is added in a later phase.
+
+- API docs (try the endpoints): http://localhost:8000/docs
+- Upload a file: `curl -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`
+- See document status: `curl localhost:8000/api/documents`
+
+## Running the tests
+
+Tests need the database running (`docker compose up -d db`). They use a separate `ask_onboarding_test` database, so your data is not touched.
+
+```bash
+# inside Docker
+docker compose exec api python -m pytest
+
+# or locally
+cd backend
+python -m venv .venv
+.venv/Scripts/pip install -r requirements-dev.txt   # macOS/Linux: .venv/bin/pip
+.venv/Scripts/python -m pytest
+```
 
 ## Project layout
 
