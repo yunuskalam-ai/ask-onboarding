@@ -9,16 +9,11 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.db import connect
-from app.deps import get_database_url, get_embedder, open_connection
+from app.deps import get_conn, get_database_url, get_embedder
 from app.ingest.parsers import UnsupportedFileType
 from app.ingest.service import EmbedFn, process_document, save_upload
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-
-def get_conn(database_url: Annotated[str, Depends(get_database_url)]):
-    yield from open_connection(database_url)
-
 
 Conn = Annotated[psycopg.Connection, Depends(get_conn)]
 

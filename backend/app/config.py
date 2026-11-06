@@ -16,6 +16,8 @@ class Settings:
     embedding_cache_dir: str | None  # where the model files live; the Docker image bakes them in
     chunk_size: int
     chunk_overlap: int
+    top_k: int
+    min_score: float  # best-chunk similarity below this = "not in the documents"
     max_upload_mb: int
 
 
@@ -28,6 +30,8 @@ def load_settings() -> Settings:
         embedding_cache_dir=env("EMBEDDING_CACHE_DIR"),
         chunk_size=int(env("CHUNK_SIZE", "800")),
         chunk_overlap=int(env("CHUNK_OVERLAP", "100")),
+        top_k=int(env("TOP_K", "5")),
+        min_score=float(env("MIN_SCORE", "0.55")),
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
     )
 
