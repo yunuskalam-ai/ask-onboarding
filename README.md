@@ -4,7 +4,7 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 **Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Claude (Anthropic API) · React + Vite + TypeScript · Docker Compose
 
-> Status: work in progress. Ingestion and retrieval work; the chat endpoint comes next.
+> Status: work in progress. Ingestion, retrieval and the streaming chat API work; the web app comes next.
 
 ## Quick start
 
@@ -20,6 +20,7 @@ This starts Postgres (with pgvector) and the API. The web app is added in a late
 - API docs (try the endpoints): http://localhost:8000/docs
 - Upload a file: `curl -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`
 - See document status: `curl localhost:8000/api/documents`
+- Ask a question (streams Server-Sent Events): `curl -N -H "Content-Type: application/json" -d '{"question": "Can I deploy on a Friday?"}' localhost:8000/api/chat`
 
 ## Running the tests
 
