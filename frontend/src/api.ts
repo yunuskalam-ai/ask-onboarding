@@ -124,3 +124,33 @@ export async function streamChat(
     console.error(err);
   }
 }
+
+export type TicketDraft = { title: string; summary: string; drafted_by: "model" | "fallback" };
+
+export type Ticket = {
+  id: number;
+  title: string;
+  question: string;
+  summary: string;
+  user_name: string;
+  status: "open" | "closed";
+  created_at: string;
+};
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new ApiError(await errorMessage(response));
+  return response.json();
+}
+
+/** The model drafts a ticket through its create_ticket tool. Nothing is saved yet. */
+export const draftTicket = (question: string) => postJson<TicketDraft>("/api/tickets/draft", { question });
+
+export const createTicket = (ticket: { title: string; question: string; summary: string; user_name: string }) =>
+  postJson<Ticket>("/api/tickets", ticket);
+
+export const listTickets = () => getJson<Ticket[]>("/api/tickets");

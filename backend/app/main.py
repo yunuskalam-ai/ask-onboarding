@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import chat, documents, retrieve
+from app.api import chat, documents, retrieve, tickets
 from app.config import settings
 from app.db import connect, init_schema
 
@@ -23,6 +23,7 @@ app = FastAPI(title="Ask Onboarding API", lifespan=lifespan)
 app.include_router(documents.router)
 app.include_router(retrieve.router)
 app.include_router(chat.router)
+app.include_router(tickets.router)
 
 
 @app.get("/api/health")

@@ -137,3 +137,23 @@ mark { background: var(--mark); color: inherit; padding: 0.1rem 0; border-radius
   .source-panel { position: fixed; inset: 53px 0 0 0; border-left: none; z-index: 10; height: auto; }
   .docs th:nth-child(2), .docs td:nth-child(2) { display: none; }
 }
+
+/* --- Ticket offer (inside a chat message) --- */
+.ticket { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; padding: 0.75rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); white-space: normal; }
+.ticket.done { color: var(--ready); }
+.ticket label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; font-weight: 600; }
+.ticket input, .ticket textarea { font-weight: 400; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); resize: vertical; }
+.ticket .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ticket button { padding: 0.45rem 0.9rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
+.ticket button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
+.ticket button:disabled { opacity: 0.6; cursor: default; }
+.ticket .notice { margin: 0; }
+
+/* --- Tickets page --- */
+ul.tickets { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.75rem; }
+ul.tickets li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+.ticket-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+ul.tickets p { margin: 0.5rem 0 0; }
+.asked { font-style: italic; }
+.badge.open { color: var(--processing); }
+.badge.closed { color: var(--muted); }
