@@ -18,7 +18,7 @@ docker compose up
 
 This starts Postgres (with pgvector), Ollama, the API and the web app.
 
-**Open http://localhost:8080.** Upload files on the Documents page, ask questions on the Chat page, and see help-desk tickets for unanswered questions on the Tickets page.
+**Open http://localhost:8080.** The 18 sample documents load automatically on the first start (watch them turn *ready* on the Documents page, about a minute). Then ask questions on the Chat page, upload your own files on the Documents page, and see help-desk tickets for unanswered questions on the Tickets page.
 
 **The first start takes a few minutes:** it downloads the Ollama image and the `qwen2.5:3b` model (about 1.9 GB). The API waits until the model is ready. Later starts take seconds.
 
