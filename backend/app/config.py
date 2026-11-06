@@ -19,6 +19,9 @@ class Settings:
     top_k: int
     min_score: float  # best-chunk similarity below this = "not in the documents"
     max_upload_mb: int
+    anthropic_api_key: str | None
+    answer_model: str
+    answer_effort: str  # low | medium | high | xhigh | max
 
 
 def load_settings() -> Settings:
@@ -33,6 +36,9 @@ def load_settings() -> Settings:
         top_k=int(env("TOP_K", "5")),
         min_score=float(env("MIN_SCORE", "0.55")),
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
+        anthropic_api_key=env("ANTHROPIC_API_KEY") or None,
+        answer_model=env("ANSWER_MODEL", "claude-sonnet-5-5"),
+        answer_effort=env("ANSWER_EFFORT", "low"),
     )
 
 

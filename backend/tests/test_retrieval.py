@@ -1,28 +1,15 @@
 """Retrieval with the real embedding model over all 18 sample docs.
 
-The documents are indexed once for this module (about 5 seconds), not
-per test. Tests here must leave the data as they found it.
+Uses the `indexed` fixture from conftest. Tests here must leave the data
+as they found it.
 """
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db import connect
 from app.deps import get_database_url
-from app.ingest.service import ingest_file
 from app.main import app
 from app.retrieval.search import retrieve, search
-
-
-@pytest.fixture(scope="module")
-def indexed(test_database_url):
-    with connect(test_database_url) as conn:
-        conn.execute("TRUNCATE documents RESTART IDENTITY CASCADE")
-        from tests.conftest import SAMPLE_DOCS
-
-        for path in sorted(SAMPLE_DOCS.iterdir()):
-            ingest_file(conn, path.name, path.read_bytes())  # real embeddings
-        yield conn
 
 
 @pytest.mark.parametrize(
