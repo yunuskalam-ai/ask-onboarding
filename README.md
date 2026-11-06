@@ -2,7 +2,9 @@
 
 Ask Onboarding is a RAG assistant that answers new employees' questions from company documents. Every answer cites the exact passage it came from. When the documents don't cover a question, the app says "I don't know" and offers to open a help-desk ticket instead.
 
-**Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Claude (Anthropic API) · React + Vite + TypeScript · Docker Compose
+**Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Ollama with qwen2.5:3b (local LLM; Claude optional) · React + Vite + TypeScript · Docker Compose
+
+Everything runs locally. No API key is needed.
 
 > Status: work in progress. Ingestion, retrieval and the streaming chat API work; the web app comes next.
 
@@ -11,11 +13,14 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 ```bash
 git clone https://github.com/yunuskalam-ai/ask-onboarding.git
 cd ask-onboarding
-cp .env.example .env        # then set ANTHROPIC_API_KEY
 docker compose up
 ```
 
-This starts Postgres (with pgvector) and the API. The web app is added in a later phase.
+This starts Postgres (with pgvector), Ollama and the API. The web app is added in a later phase.
+
+**The first start takes a few minutes:** it downloads the Ollama image and the `qwen2.5:3b` model (about 1.9 GB). The API waits until the model is ready. Later starts take seconds.
+
+The model runs on the CPU, so the first words of an answer take a few seconds. To use Claude instead, copy `.env.example` to `.env`, then set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
 
 - API docs (try the endpoints): http://localhost:8000/docs
 - Upload a file: `curl -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`

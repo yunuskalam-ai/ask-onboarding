@@ -22,9 +22,10 @@ services:
     build: ./backend
     env_file:
       - path: .env
-        required: false # the app starts without it; answering questions needs the API key
+        required: false # optional: every setting has a default
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ask}:${POSTGRES_PASSWORD:-ask}@db:5432/${POSTGRES_DB:-ask_onboarding}
+      OLLAMA_URL: http://ollama:11434
     ports:
       - "8000:8000"
     volumes:
@@ -32,11 +33,37 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 10s
       timeout: 3s
       retries: 10
 
+  # Local LLM server. CPU only, so no GPU drivers are needed on the reviewer's machine.
+  ollama:
+    image: ollama/ollama:0.40.15
+    volumes:
+      - ollama_models:/root/.ollama # downloaded models survive restarts
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-off job: download the answer model if it is not there yet, then exit.
+  # The first run downloads about 1.9 GB; later runs finish in a second.
+  ollama-pull:
+    image: ollama/ollama:0.40.15
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-qwen2.5:3b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   db_data:
+  ollama_models:
