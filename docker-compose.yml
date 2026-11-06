@@ -1,5 +1,5 @@
 # Ask Onboarding — local stack. Start everything with: docker compose up
-# The web service is added in Phase 4.
+# Open the app at http://localhost:8080
 services:
   db:
     image: pgvector/pgvector:0.8.0-pg16
@@ -40,6 +40,14 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+
+  web:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
   # Local LLM server. CPU only, so no GPU drivers are needed on the reviewer's machine.
   ollama:
