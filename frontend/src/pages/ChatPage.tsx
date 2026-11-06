@@ -2,12 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NO_ANSWER, streamChat, type Citation, type DoneReason, type Turn } from "../api";
 import AnswerText from "../components/AnswerText";
 import SourcePanel from "../components/SourcePanel";
+import TicketOffer from "../components/TicketOffer";
 
 type Message =
   | { id: number; role: "user"; text: string }
   | {
       id: number;
       role: "assistant";
+      question: string; // what this message answers, for the ticket offer
       text: string;
       state: "streaming" | "done" | "error";
       reason?: DoneReason;
@@ -54,7 +56,7 @@ export default function ChatPage() {
     setMessages((all) => [
       ...all,
       { id: nextId, role: "user", text: question },
-      { id: answerId, role: "assistant", text: "", state: "streaming", citations: [] },
+      { id: answerId, role: "assistant", question, text: "", state: "streaming", citations: [] },
     ]);
     nextId += 2;
     setInput("");
@@ -122,6 +124,7 @@ export default function ChatPage() {
                 {m.state === "done" && m.reason === "answered" && m.citations.length === 0 && (
                   <div className="muted small">This answer did not cite a source, so check it before relying on it.</div>
                 )}
+                {m.state === "done" && m.reason !== "answered" && <TicketOffer question={m.question} />}
                 {m.state === "done" && m.citations.length > 0 && (
                   <div className="sources">
                     Sources:{" "}
