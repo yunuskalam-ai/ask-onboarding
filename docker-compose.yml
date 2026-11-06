@@ -1,0 +1,22 @@
+# Ask Onboarding — local stack.
+# Phase 0: database only. The api and web services are added in later phases.
+services:
+  db:
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ask}
+      POSTGRES_DB: ${POSTGRES_DB:-ask_onboarding}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:

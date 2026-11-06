@@ -1,0 +1,4 @@
+# Keep LF endings in the repo so shell scripts and SQL work inside Linux containers.
+* text=auto eol=lf
+*.pdf binary
+*.png binary
