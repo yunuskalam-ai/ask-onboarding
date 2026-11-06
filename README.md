@@ -6,7 +6,7 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 Everything runs locally. No API key is needed.
 
-> Status: work in progress. Ingestion, retrieval and the streaming chat API work; the web app comes next.
+> Status: work in progress. Upload, chat with clickable citations and the honest "not in the documents" answer work; help-desk tickets come next.
 
 ## Quick start
 
@@ -16,7 +16,9 @@ cd ask-onboarding
 docker compose up
 ```
 
-This starts Postgres (with pgvector), Ollama and the API. The web app is added in a later phase.
+This starts Postgres (with pgvector), Ollama, the API and the web app.
+
+**Open http://localhost:8080.** Upload files on the Documents page, then ask questions on the Chat page.
 
 **The first start takes a few minutes:** it downloads the Ollama image and the `qwen2.5:3b` model (about 1.9 GB). The API waits until the model is ready. Later starts take seconds.
 
@@ -40,6 +42,14 @@ cd backend
 python -m venv .venv
 .venv/Scripts/pip install -r requirements-dev.txt   # macOS/Linux: .venv/bin/pip
 .venv/Scripts/python -m pytest
+```
+
+Frontend tests (stream parser and answer rendering):
+
+```bash
+cd frontend
+npm ci
+npm test
 ```
 
 ## Project layout
