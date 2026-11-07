@@ -21,7 +21,7 @@ Every answer is printed so the scoring can be spot-checked.
 
 Run inside the api container (it has the models and the database):
     docker compose exec api python /app/eval/run_eval.py
-    docker compose exec api python /app/eval/run_eval.py --answer-configs 800:5,800:3
+    docker compose exec api python /app/eval/run_eval.py --answer-configs 400:5,400:3
     docker compose exec api python /app/eval/run_eval.py --retrieval-only
 """
 
@@ -126,7 +126,7 @@ def pct(x: float) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--chunk-sizes", default="400,800", help="characters, comma-separated (400 and/or 800)")
-    parser.add_argument("--answer-configs", default="800:5,800:3", help="chunk_size:top_k pairs to run answers for")
+    parser.add_argument("--answer-configs", default="400:5,800:5", help="chunk_size:top_k pairs to run answers for")
     parser.add_argument("--retrieval-only", action="store_true", help="skip the slow LLM part")
     args = parser.parse_args()
 
