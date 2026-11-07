@@ -53,15 +53,16 @@ def test_draft_falls_back_to_the_question_when_the_model_makes_no_tool_call(clie
     assert body["title"].startswith("Can I bring my dog")
 
 
-def test_draft_reports_llm_errors_as_503(client):
+def test_draft_still_works_when_the_model_is_down(client):
+    # An LLM outage is exactly when people need to open a ticket.
     def drafter(question):
         raise LLMError("Could not reach the local model (Ollama). Is the ollama service running?")
 
     _use_drafter(drafter)
-    response = client.post("/api/tickets/draft", json={"question": "Q?"})
+    response = client.post("/api/tickets/draft", json={"question": "Do we get stock options?"})
 
-    assert response.status_code == 503
-    assert "Could not reach the local model" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json() == {"title": "Do we get stock options?", "summary": "", "drafted_by": "fallback"}
 
 
 def test_draft_saves_nothing(client):
