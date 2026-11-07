@@ -6,8 +6,6 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 Everything runs locally. No API key is needed.
 
-> Status: work in progress. All features, the evaluation and hybrid search are done; the architecture write-up comes next.
-
 ## Quick start
 
 ```bash
@@ -113,10 +111,20 @@ docker compose exec api python /app/eval/run_eval.py --retrieval-only  # seconds
 
 It uses a separate `ask_onboarding_eval` database and writes full results to `eval/results/`. After changing `CHUNK_SIZE` for the app itself, run `docker compose exec api python -m app.reindex`.
 
+## Known limitations
+
+- **Slow answers on a CPU.** The first word takes about 8–15 s with `qwen2.5:3b`, and about 30 s for the first question after Ollama restarts (the model reloads). That misses the 2-second target, which assumed a hosted model. A GPU, a hosted model, or `LLM_PROVIDER=anthropic` fixes it. See [ARCHITECTURE.md](ARCHITECTURE.md#3-scaling-to-5000-employees-200000-documents-and-20000-questions-per-day).
+- **The 3B model's mistakes.** It sometimes leaves out the `[n]` citation (the UI then says "This answer did not cite a source"). Occasionally it writes "[1]" where a number should be.
+- **Follow-up questions.** Earlier turns are sent to the model, but retrieval uses only the current question. So "What about Manchester?" may miss the right document.
+- **No login or permissions.** Everyone sees every document, and a ticket's "user" is a name typed into a field.
+- **Uploads only.** There is no Google Drive or Confluence sync. Scanned PDFs without a text layer are rejected (no OCR).
+- **English only.** Both the embedding model and the full-text search are English.
+- **Chat history lives in the page.** Reloading the page clears the conversation, though tickets are saved.
+- **No delete in the UI.** Documents can be replaced by uploading the same filename, but not removed. Tickets have no workflow beyond `open`.
+- **Built for one machine.** Original files are stored in Postgres, the API runs one process and opens one connection per request, and ingestion runs inside the API. [ARCHITECTURE.md](ARCHITECTURE.md) covers what changes at company scale.
+- **A small evaluation set.** 20 questions, so one question moves accuracy by about 6 points.
+
 ## Docs
 
-These sections are written as the project progresses:
-
-- Known limitations
-- `ARCHITECTURE.md`: design, tradeoffs and scaling plan
-- `AI_LOG.md`: how AI tools were used
+- [ARCHITECTURE.md](ARCHITECTURE.md): how a question flows through the system, the choices and what didn't work, scaling, failure modes, quality and RAG vs. fine-tuning
+- [AI_LOG.md](AI_LOG.md): how AI tools were used to build this

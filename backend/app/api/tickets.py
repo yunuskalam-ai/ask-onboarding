@@ -7,15 +7,18 @@ The flow has a human in the middle:
 3. POST /api/tickets - saves the ticket the employee approved.
 """
 
+import logging
 from datetime import datetime
 from typing import Annotated, Literal
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, StringConstraints
 
 from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
 from app.deps import get_conn
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
@@ -44,13 +47,18 @@ class DraftOut(BaseModel):
 
 @router.post("/draft")
 def draft(body: DraftIn, drafter: Annotated[DraftTicketFn, Depends(get_ticket_drafter)]) -> DraftOut:
-    """Ask the model to draft a ticket through its create_ticket tool. Saves nothing."""
+    """Ask the model to draft a ticket through its create_ticket tool. Saves nothing.
+
+    Never blocks the employee on the model: if the model is down or makes no
+    valid tool call, the draft starts from their own question. An outage is
+    exactly when people most need to open a ticket.
+    """
     try:
         result = drafter(body.question)
     except LLMError as exc:
-        raise HTTPException(503, str(exc)) from exc
+        log.warning("Ticket draft fell back to the question: %s", exc)
+        result = None
     if result is None:
-        # Never block the employee on the model: start from their own words.
         return DraftOut(title=_title_from_question(body.question), summary="", drafted_by="fallback")
     return DraftOut(title=result.title, summary=result.summary, drafted_by="model")
 
