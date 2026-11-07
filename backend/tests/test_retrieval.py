@@ -31,8 +31,9 @@ def test_known_question_finds_its_document_in_the_top_3(indexed, question, expec
     assert expected_file in files
 
 
-def test_hits_are_sorted_and_limited_to_top_k(indexed):
-    hits = search(indexed, "What does the security policy say about USB sticks?", top_k=3)
+def test_vector_hits_are_sorted_by_similarity_and_limited_to_top_k(indexed):
+    # Hybrid orders by fused rank instead, so a lower-similarity keyword match can come first.
+    hits = search(indexed, "What does the security policy say about USB sticks?", top_k=3, mode="vector")
 
     assert len(hits) == 3
     scores = [hit.score for hit in hits]

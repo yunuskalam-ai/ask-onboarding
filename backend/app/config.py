@@ -44,7 +44,7 @@ def load_settings() -> Settings:
         chunk_size=int(env("CHUNK_SIZE", "400")),
         chunk_overlap=int(env("CHUNK_OVERLAP", "50")),
         top_k=int(env("TOP_K", "5")),
-        search_mode=env("SEARCH_MODE", "vector"),
+        search_mode=env("SEARCH_MODE", "hybrid"),
         min_score=float(env("MIN_SCORE", "0.55")),
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
         seed_sample_docs=env("SEED_SAMPLE_DOCS", "true").lower() in ("1", "true", "yes"),
