@@ -3,8 +3,10 @@
 For each chunk size, the sample docs are indexed into a separate
 <db>_eval database (dev data is never touched). Then:
 
-  Retrieval (fast, no LLM), for every chunk size and top_k:
-    hit@k            the expected document is among the top k chunks
+  Retrieval (fast, no LLM), for every chunk size and search mode:
+    hit@k            the expected document is among the top k chunks, on the
+                     16 held-out questions, plus hit@1 on the 16 calibration
+                     questions for a bigger sample
   Answers (slow: one LLM call per question), for each --answer-config:
     accuracy         answerable question, not refused, contains every key fact
     cites source     the answer cites the expected document
@@ -21,7 +23,7 @@ Every answer is printed so the scoring can be spot-checked.
 
 Run inside the api container (it has the models and the database):
     docker compose exec api python /app/eval/run_eval.py
-    docker compose exec api python /app/eval/run_eval.py --answer-configs 400:5,400:3
+    docker compose exec api python /app/eval/run_eval.py --answer-configs 400:5:vector,400:5:hybrid
     docker compose exec api python /app/eval/run_eval.py --retrieval-only
 """
 
@@ -42,6 +44,7 @@ from app.config import settings  # noqa: E402
 from app.db import connect, ensure_database, sibling_database_url  # noqa: E402
 from app.ingest.service import ingest_file  # noqa: E402
 from app.retrieval.search import retrieve, search  # noqa: E402
+from calibrate_threshold import ANSWERABLE as CALIBRATION  # noqa: E402  (same folder)
 
 SAMPLE_DOCS = ROOT / "sample_docs"
 RESULTS = ROOT / "eval" / "results"
@@ -59,14 +62,14 @@ def index(conn, chunk_size: int) -> int:
     return conn.execute("SELECT count(*) AS n FROM chunks").fetchone()["n"]
 
 
-def retrieval_scores(conn, questions: list[dict], ks: list[int]) -> dict[int, float]:
-    answerable = [q for q in questions if q["source"]]
+def retrieval_scores(conn, items: list[tuple[str, str]], ks: list[int], mode: str) -> dict[int, float]:
+    """items are (question, expected filename) pairs."""
     hits = {k: 0 for k in ks}
-    for q in answerable:
-        files = [h.filename for h in search(conn, q["question"], top_k=max(ks))]
+    for question, source in items:
+        files = [h.filename for h in search(conn, question, top_k=max(ks), mode=mode)]
         for k in ks:
-            hits[k] += q["source"] in files[:k]
-    return {k: hits[k] / len(answerable) for k in ks}
+            hits[k] += source in files[:k]
+    return {k: hits[k] / len(items) for k in ks}
 
 
 def contains_facts(answer: str, groups: list[list[str]]) -> bool:
@@ -74,9 +77,9 @@ def contains_facts(answer: str, groups: list[list[str]]) -> bool:
     return all(any(alt.lower() in text for alt in group) for group in groups)
 
 
-def ask(conn, q: dict, top_k: int) -> dict:
+def ask(conn, q: dict, top_k: int, mode: str) -> dict:
     start = time.perf_counter()
-    retrieval = retrieve(conn, q["question"], top_k=top_k)
+    retrieval = retrieve(conn, q["question"], top_k=top_k, mode=mode)
     first = None
     text, done, error = "", None, None
     for name, data in answer_events(q["question"], retrieval):
@@ -126,14 +129,23 @@ def pct(x: float) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--chunk-sizes", default="400,800", help="characters, comma-separated (400 and/or 800)")
-    parser.add_argument("--answer-configs", default="400:5,800:5", help="chunk_size:top_k pairs to run answers for")
+    parser.add_argument("--search-modes", default="vector,hybrid", help="search modes for the retrieval table")
+    parser.add_argument(
+        "--answer-configs", default="400:5:vector,400:5:hybrid",
+        help="chunk_size:top_k[:search_mode] to run answers for (mode defaults to vector)",
+    )
     parser.add_argument("--retrieval-only", action="store_true", help="skip the slow LLM part")
     args = parser.parse_args()
 
     questions = load_questions()
     chunk_sizes = [int(s) for s in args.chunk_sizes.split(",")]
-    answer_configs = [] if args.retrieval_only else [tuple(map(int, c.split(":"))) for c in args.answer_configs.split(",")]
-    for size, _ in answer_configs:
+    modes = args.search_modes.split(",")
+    answer_configs = []
+    for config in [] if args.retrieval_only else args.answer_configs.split(","):
+        size, top_k, *mode = config.split(":")
+        answer_configs.append((int(size), int(top_k), mode[0] if mode else "vector"))
+    held_out = [(q["question"], q["source"]) for q in questions if q["source"]]
+    for size, _, _ in answer_configs:
         if size not in chunk_sizes:
             chunk_sizes.append(size)
 
@@ -144,24 +156,29 @@ def main() -> None:
               "retrieval": {}, "answers": {}}
 
     print(f"# Eval: {len(questions)} questions, LLM {provider}, MIN_SCORE {settings.min_score}\n")
-    print("## Retrieval (16 answerable questions)\n")
-    print("| Chunk size | Chunks | hit@1 | hit@3 | hit@5 |")
-    print("| --- | --- | --- | --- | --- |")
+    print(f"## Retrieval ({len(held_out)} held-out answerable questions, {len(CALIBRATION)} calibration questions)\n")
+    print("| Chunk size | Search | Chunks | hit@1 | hit@3 | hit@5 | Calibration hit@1 |")
+    print("| --- | --- | --- | --- | --- | --- | --- |")
     with connect(url) as conn:
         for size in chunk_sizes:
             n_chunks = index(conn, size)
-            scores = retrieval_scores(conn, questions, [1, 3, 5])
-            report["retrieval"][size] = {"chunks": n_chunks, **{f"hit@{k}": v for k, v in scores.items()}}
-            print(f"| {size} chars | {n_chunks} | {pct(scores[1])} | {pct(scores[3])} | {pct(scores[5])} |", flush=True)
+            for mode in modes:
+                scores = retrieval_scores(conn, held_out, [1, 3, 5], mode)
+                calibration = retrieval_scores(conn, CALIBRATION, [1], mode)[1]
+                report["retrieval"][f"{size}:{mode}"] = {
+                    "chunks": n_chunks, **{f"hit@{k}": v for k, v in scores.items()}, "calibration_hit@1": calibration
+                }
+                print(f"| {size} chars | {mode} | {n_chunks} | {pct(scores[1])} | {pct(scores[3])} | {pct(scores[5])} "
+                      f"| {pct(calibration)} |", flush=True)
 
-            for c_size, top_k in answer_configs:
+            for c_size, top_k, mode in answer_configs:
                 if c_size != size:
                     continue
-                label = f"{size}:{top_k}"
-                print(f"\n### Answers with {size}-char chunks, top {top_k} sources\n", flush=True)
+                label = f"{size}:{top_k}:{mode}"
+                print(f"\n### Answers with {size}-char chunks, top {top_k} sources, {mode} search\n", flush=True)
                 results = []
                 for q in questions:
-                    r = ask(conn, q, top_k)
+                    r = ask(conn, q, top_k, mode)
                     results.append(r)
                     mark = "ok " if (r["correct"] or r["refused_correctly"]) else "BAD"
                     cite = "cite" if r["cites_source"] else "    "
@@ -172,7 +189,7 @@ def main() -> None:
 
     if report["answers"]:
         print("## Answers\n")
-        print("| Chunks : sources | Accuracy (16) | Cites right doc | False refusals | Refusal accuracy (4) | Prompt size | Median first token |")
+        print("| Chunks : sources : search | Accuracy (16) | Cites right doc | False refusals | Refusal accuracy (4) | Prompt size | Median first token |")
         print("| --- | --- | --- | --- | --- | --- | --- |")
         for label, data in report["answers"].items():
             s = data["scores"]
