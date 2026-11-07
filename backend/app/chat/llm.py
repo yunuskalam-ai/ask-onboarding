@@ -64,6 +64,26 @@ def draft_ticket(question: str) -> TicketDraft | None:
     raise LLMError(f"Unknown LLM_PROVIDER '{settings.llm_provider}'. Use 'ollama' or 'anthropic'.")
 
 
+def warm_up() -> None:
+    """Load the local model into memory, so the first question is not slow.
+
+    Claude needs no warm-up. Ollama loads a model on its first request
+    (about 15-25 s on a laptop CPU); an empty generate request does just that.
+    """
+    if settings.llm_provider != "ollama":
+        return
+    request = urllib.request.Request(
+        f"{settings.ollama_url}/api/generate",
+        # Same options as real requests: a different num_ctx would make Ollama
+        # load the model again on the first question.
+        data=json.dumps({"model": settings.ollama_model, **_OLLAMA_COMMON}).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    with _ollama_errors():
+        with urllib.request.urlopen(request, timeout=300):
+            pass
+
+
 # --- The ticket tool (shared by both providers) --------------------------------
 
 TICKET_TOOL_NAME = "create_ticket"
@@ -125,20 +145,19 @@ def _ollama_errors():
         raise LLMError("The local model sent a reply we could not read. Please try again.") from exc
 
 
+_OLLAMA_COMMON = {
+    "keep_alive": "30m",  # keep the model in memory between questions
+    "options": {
+        "temperature": 0.1,  # stay close to the sources
+        "num_ctx": 8192,  # room for 5 sources, the question and some history
+    },
+}
+
+
 def _ollama_request(body: dict, base_url: str | None) -> urllib.request.Request:
     return urllib.request.Request(
         f"{base_url or settings.ollama_url}/api/chat",
-        data=json.dumps(
-            {
-                "model": settings.ollama_model,
-                "keep_alive": "30m",  # keep the model in memory between questions
-                "options": {
-                    "temperature": 0.1,  # stay close to the sources
-                    "num_ctx": 8192,  # room for 5 sources, the question and some history
-                },
-                **body,
-            }
-        ).encode(),
+        data=json.dumps({"model": settings.ollama_model, **_OLLAMA_COMMON, **body}).encode(),
         headers={"Content-Type": "application/json"},
     )
 

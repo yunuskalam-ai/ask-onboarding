@@ -11,18 +11,25 @@ export default function DocumentsPage() {
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const refresh = useCallback(async () => {
-    try {
-      setDocs(await listDocuments());
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : "Could not load documents.");
-    }
-  }, []);
+  // Bumping this number reloads the list (after an upload, a retry, or a poll tick).
+  const [version, setVersion] = useState(0);
+  const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let cancelled = false;
+    listDocuments()
+      .then((all) => {
+        if (cancelled) return;
+        setDocs(all);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof ApiError ? err.message : "Could not load documents.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
 
   // Poll only while something is still processing, so status updates without a reload.
   const anyProcessing = docs?.some((d) => d.status === "processing") ?? false;

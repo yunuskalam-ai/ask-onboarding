@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from app.api import chat, documents, retrieve, tickets
 from app.config import settings
 from app.db import connect, init_schema
+from app.startup import start_background_tasks
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,6 +17,9 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     with connect(settings.database_url) as conn:
         init_schema(conn)
+    # Seeding and model warm-up run in the background, so the API is
+    # healthy (and the web app usable) while they finish.
+    start_background_tasks()
     yield
 
 

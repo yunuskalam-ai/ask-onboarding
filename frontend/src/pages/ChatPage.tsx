@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NO_ANSWER, streamChat, type Citation, type DoneReason, type Turn } from "../api";
 import AnswerText from "../components/AnswerText";
+import LibraryNotice from "../components/LibraryNotice";
 import SourcePanel from "../components/SourcePanel";
 import TicketOffer from "../components/TicketOffer";
 
@@ -92,6 +93,7 @@ export default function ChatPage() {
     <div className={`chat-layout ${source ? "with-source" : ""}`}>
       <section className="chat">
         <div className="messages" aria-live="polite">
+          <LibraryNotice />
           {messages.length === 0 && (
             <div className="empty">
               <h1>Ask anything about working here</h1>

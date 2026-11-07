@@ -6,6 +6,10 @@ defaults, which point at the database container's port on localhost.
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+# The repo root: backend/app/config.py -> two levels up. In Docker this is /app.
+_ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
@@ -19,6 +23,8 @@ class Settings:
     top_k: int
     min_score: float  # best-chunk similarity below this = "not in the documents"
     max_upload_mb: int
+    seed_sample_docs: bool  # load sample_docs/ on first start, into an empty database only
+    sample_docs_dir: str
     llm_provider: str  # "ollama" (default, local) or "anthropic"
     ollama_url: str
     ollama_model: str
@@ -39,6 +45,8 @@ def load_settings() -> Settings:
         top_k=int(env("TOP_K", "5")),
         min_score=float(env("MIN_SCORE", "0.55")),
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
+        seed_sample_docs=env("SEED_SAMPLE_DOCS", "true").lower() in ("1", "true", "yes"),
+        sample_docs_dir=env("SAMPLE_DOCS_DIR", str(_ROOT / "sample_docs")),
         llm_provider=env("LLM_PROVIDER", "ollama"),
         ollama_url=env("OLLAMA_URL", "http://localhost:11434"),
         ollama_model=env("OLLAMA_MODEL", "qwen2.5:3b"),
