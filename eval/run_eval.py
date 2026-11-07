@@ -10,7 +10,10 @@ For each chunk size, the sample docs are indexed into a separate
     cites source     the answer cites the expected document
     false refusals   answerable question answered "not in the documents"
     refusal accuracy unanswerable question correctly refused
-    first token      seconds until the first word (median)
+    first token      seconds until the first word (median). Ollama caches the
+                     start of a prompt, so a config run right after a similar
+                     one looks faster than it is; prompt size is the fair,
+                     repeatable measure of speed on a CPU.
 
 Answers are scored by key facts, not by an LLM judge: a 3B model is not a
 reliable grader, and fact matching gives the same score on every run.
@@ -33,6 +36,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.chat.prompt import build_user_message  # noqa: E402
 from app.chat.service import answer_events  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.db import connect, ensure_database, sibling_database_url  # noqa: E402
@@ -94,6 +98,7 @@ def ask(conn, q: dict, top_k: int) -> dict:
         "correct": bool(q["source"]) and answered and contains_facts(text, q["must_include"]),
         "cites_source": bool(q["source"]) and q["source"] in cited,
         "refused_correctly": not q["source"] and not answered and error is None,
+        "prompt_chars": len(build_user_message(q["question"], retrieval.hits)) if retrieval.answerable else 0,
         "first_token_s": round(first, 1) if first is not None else None,
         "total_s": round(time.perf_counter() - start, 1),
     }
@@ -110,6 +115,7 @@ def answer_scores(results: list[dict], questions: list[dict]) -> dict:
         "refusal_accuracy": sum(r["refused_correctly"] for r in unanswerable) / len(unanswerable),
         "errors": sum(r["error"] is not None for r in results),
         "median_first_token_s": statistics.median(llm_times) if llm_times else None,
+        "mean_prompt_chars": round(statistics.mean(r["prompt_chars"] for r in results if r["prompt_chars"])),
     }
 
 
@@ -166,13 +172,13 @@ def main() -> None:
 
     if report["answers"]:
         print("## Answers\n")
-        print("| Chunks : sources | Accuracy (16) | Cites right doc | False refusals | Refusal accuracy (4) | Median first token |")
-        print("| --- | --- | --- | --- | --- | --- |")
+        print("| Chunks : sources | Accuracy (16) | Cites right doc | False refusals | Refusal accuracy (4) | Prompt size | Median first token |")
+        print("| --- | --- | --- | --- | --- | --- | --- |")
         for label, data in report["answers"].items():
             s = data["scores"]
             ft = f"{s['median_first_token_s']:.1f} s" if s["median_first_token_s"] else "-"
             print(f"| {label} | {pct(s['accuracy'])} | {pct(s['cites_source'])} | {s['false_refusals']} | "
-                  f"{pct(s['refusal_accuracy'])} | {ft} |")
+                  f"{pct(s['refusal_accuracy'])} | {s['mean_prompt_chars']:,} chars | {ft} |")
 
     RESULTS.mkdir(parents=True, exist_ok=True)
     out = RESULTS / f"{datetime.now():%Y%m%d-%H%M%S}.json"
