@@ -30,6 +30,7 @@ services:
       - "8000:8000"
     volumes:
       - ./sample_docs:/app/sample_docs:ro
+      - ./eval:/app/eval # the eval script runs here and writes eval/results/
     depends_on:
       db:
         condition: service_healthy
