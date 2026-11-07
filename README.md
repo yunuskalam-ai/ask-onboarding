@@ -6,6 +6,16 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 Everything runs locally. No API key is needed.
 
+## What it looks like
+
+| Chat | No answer → help-desk ticket |
+| --- | --- |
+| ![The chat start page with example questions](docs/chat-home.png) | ![A question the documents can't answer, with the ticket drafted by the model ready for review](docs/ticket-offer.png) |
+| **Documents** | **Tickets** |
+| ![The documents page with the sample files ready](docs/documents.png) | ![The tickets page listing a ticket created from the chat](docs/tickets.png) |
+
+In the chat, every answer cites its sources as **[1]**, **[2]**. Clicking one opens a side panel with the exact passage highlighted.
+
 ## Quick start
 
 ```bash
