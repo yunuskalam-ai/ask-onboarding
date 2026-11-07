@@ -62,9 +62,26 @@ def cited_hits(answer: str, hits: list[Hit]) -> list[tuple[int, Hit]]:
     return [(n, hits[n - 1]) for n in seen]
 
 
+# Small models sometimes refuse in their own words instead of NO_ANSWER,
+# e.g. "The provided sources do not mention stock options." (seen in the eval).
+_PARAPHRASED_REFUSAL = re.compile(
+    r"\b(sources?|documents?|context)\b.{0,40}?"
+    r"\b(do not|don't|does not|doesn't|did not|no)\b.{0,30}?"
+    r"\b(mention|contain|cover|include|say|information|details)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
 def is_no_answer(answer: str) -> bool:
-    """True if the model used the refusal sentence (allowing small variations)."""
+    """True if the model refused: the refusal sentence, or a paraphrase of it.
+
+    A paraphrase only counts when the answer cites nothing, so a real
+    answer that adds "the documents don't mention X" still counts as an
+    answer (rule 4 of the prompt: answer the part the sources cover).
+    """
     def normalise(s: str) -> str:
         return re.sub(r"[^a-z ]", "", s.lower().replace("’", "'").replace("'", "")).strip()
 
-    return normalise(answer).startswith(normalise(NO_ANSWER))
+    if normalise(answer).startswith(normalise(NO_ANSWER)):
+        return True
+    return not _CITATION.search(answer) and bool(_PARAPHRASED_REFUSAL.search(answer))

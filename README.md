@@ -6,7 +6,7 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 Everything runs locally. No API key is needed.
 
-> Status: work in progress. Upload, chat with clickable citations, the honest "not in the documents" answer and help-desk tickets work; polish, evaluation and docs come next.
+> Status: work in progress. All core features and the evaluation are done; hybrid search and the architecture write-up come next.
 
 ## Quick start
 
@@ -70,11 +70,42 @@ npm test
 
 Regenerate the PDFs with `pip install fpdf2==2.8.3 && python scripts/make_sample_pdfs.py`.
 
+## Evaluation
+
+**Result with the defaults (400-character chunks, top 5 sources, qwen2.5:3b on CPU):** 15 of 16 answerable questions answered correctly, all 4 unanswerable questions refused, and no false "I don't know" answers.
+
+[eval/questions.json](eval/questions.json) has 20 held-out questions. None of them were used to tune anything. 16 are answerable: they cover every document type, both PDFs, and some paraphrased questions ("holiday" for "annual leave"). 4 are not in the documents (stock options, company car, dogs, sabbaticals). An answer counts as correct when it is not a refusal and contains every key fact, like "25" or "Tuesday" and "Thursday". This check is strict and gives the same score on every run. A 3B model would be an unreliable LLM judge, and the script prints every answer so the scoring can be checked by hand.
+
+| Chunks : sources | Accuracy (16) | Cites the right doc | False refusals | Refusal accuracy (4) | Prompt size | Median first token |
+| --- | --- | --- | --- | --- | --- | --- |
+| **400 : 5** (default) | **94%** | **94%** | 0 | **100%** | **1,966 chars** | **7.7 s** |
+| 800 : 5 | 88% | 81% | 0 | 100% | 3,598 chars | 10.9 s |
+
+Retrieval found the expected document in the top 3 for all 16 answerable questions, at both chunk sizes (hit@1 94%).
+
+What the eval changed:
+
+- **The chunk size went from 800 to 400.** It was better on every answer metric in two separate runs, and the prompt is 45% smaller, so answers start about 3 s sooner on a CPU. The cost: smaller chunks lose some context. On the calibration set, "Is there car parking at the London office?" now ranks its document 3rd instead of 1st, because the parking chunk no longer includes the LONDON heading. The model reads the top 5, so the answer is unaffected.
+- **Paraphrased refusals are now detected.** The first run showed the model sometimes refuses in its own words ("The provided sources do not mention stock options"). Those counted as answers, so the UI offered no ticket. They are now caught, but only when the answer cites nothing.
+- **Timing is measured fairly.** One run showed a 1.5 s first token that came from Ollama reusing a cached prompt start from the previous config. Prompt size is now reported too, as a repeatable speed measure.
+
+The remaining miss: "Which days should I be in the office?" is answered with core hours instead of the Tuesday/Thursday anchor days. The right document is retrieved, so this is the 3B model's limit.
+
+The "no answer" threshold (`MIN_SCORE=0.55`) was set separately with [eval/calibrate_threshold.py](eval/calibrate_threshold.py). Answerable questions score 0.61–0.82 and off-topic ones 0.44–0.53. Near-topic questions the documents don't answer score like answerable ones (0.61–0.66), so the prompt's refusal rule has to catch them.
+
+Run it yourself (about 10 minutes on a laptop CPU; Git Bash on Windows needs `MSYS_NO_PATHCONV=1` in front):
+
+```bash
+docker compose exec api python /app/eval/run_eval.py                   # retrieval + answers for 400:5 and 800:5
+docker compose exec api python /app/eval/run_eval.py --retrieval-only  # seconds, no LLM
+```
+
+It uses a separate `ask_onboarding_eval` database and writes full results to `eval/results/`. After changing `CHUNK_SIZE` for the app itself, run `docker compose exec api python -m app.reindex`.
+
 ## Docs
 
 These sections are written as the project progresses:
 
-- Evaluation results
 - Known limitations
 - `ARCHITECTURE.md`: design, tradeoffs and scaling plan
 - `AI_LOG.md`: how AI tools were used

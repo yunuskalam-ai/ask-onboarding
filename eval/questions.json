@@ -1,0 +1,25 @@
+{
+  "about": "Held-out evaluation set: none of these questions were used to tune MIN_SCORE (that was eval/calibrate_threshold.py). An answer is correct when it is not a refusal and contains every group in must_include; a group matches if any of its alternatives appears (case-insensitive).",
+  "questions": [
+    {"id": "leave-days", "question": "How many days of holiday do full-time staff get each year?", "source": "handbook-pto-and-leave-policy.md", "must_include": [["25"]]},
+    {"id": "carry-over", "question": "Until when can I use leave days I carried over from last year?", "source": "handbook-pto-and-leave-policy.md", "must_include": [["31 march"]]},
+    {"id": "sick-days", "question": "How many days of full sick pay does the company give?", "source": "handbook-pto-and-leave-policy.md", "must_include": [["10", "ten"]]},
+    {"id": "anchor-days", "question": "Which days of the week should I be in the office?", "source": "handbook-remote-and-hybrid-work.md", "must_include": [["tuesday"], ["thursday"]]},
+    {"id": "home-office", "question": "How much money can I claim to set up my home office?", "source": "handbook-remote-and-hybrid-work.md", "must_include": [["400"]]},
+    {"id": "london-hotel", "question": "What is the most I can spend per night on a hotel in London?", "source": "handbook-expenses-and-travel.md", "must_include": [["200"]]},
+    {"id": "expense-deadline", "question": "How soon after buying something do I need to submit the expense?", "source": "handbook-expenses-and-travel.md", "must_include": [["30"]]},
+    {"id": "pension", "question": "What percentage of my salary does Larkspur pay into my pension?", "source": "handbook-benefits-overview.md", "must_include": [["6%", "6 %", "6 percent", "six percent"]]},
+    {"id": "learning-budget", "question": "How big is my yearly budget for courses and conferences?", "source": "handbook-benefits-overview.md", "must_include": [["1,000", "1000"]]},
+    {"id": "okta-lockout", "question": "How many wrong password attempts lock my Okta account?", "source": "it-password-reset-steps.txt", "must_include": [["5", "five"]]},
+    {"id": "guest-wifi", "question": "Which Wi-Fi network should a visitor connect to?", "source": "it-vpn-and-wifi.md", "must_include": [["larkspur-guest"]]},
+    {"id": "payments-approvals", "question": "How many approvals does a pull request that changes the payments code need?", "source": "eng-code-review-guidelines.md", "must_include": [["2", "two"]]},
+    {"id": "deploy-days", "question": "On which days are production deploys allowed?", "source": "eng-deployment-and-releases.md", "must_include": [["monday"], ["thursday"]]},
+    {"id": "sev1-response", "question": "How quickly must on-call respond to a SEV1 incident?", "source": "eng-on-call-and-incidents.md", "must_include": [["15"]]},
+    {"id": "gift-limit", "question": "Up to what value can I accept a gift without recording it?", "source": "handbook-code-of-conduct.pdf", "page": 3, "must_include": [["50"]]},
+    {"id": "peer-feedback", "question": "How many peers do I pick to give feedback in my review?", "source": "handbook-performance-reviews.pdf", "page": 2, "must_include": [["3", "three"]]},
+    {"id": "equity", "question": "Does the company give employees stock options or equity?", "source": null},
+    {"id": "company-car", "question": "Am I eligible for a company car?", "source": null},
+    {"id": "dogs", "question": "Can I bring my dog to the office?", "source": null},
+    {"id": "sabbatical", "question": "How long can a sabbatical be?", "source": null}
+  ]
+}

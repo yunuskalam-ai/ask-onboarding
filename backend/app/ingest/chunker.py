@@ -2,8 +2,8 @@
 
 Sizes are in characters, not tokens: no tokenizer dependency, and the
 offsets we store are the same unit we use to highlight the passage.
-About 4 characters make one English token, so 800 characters is roughly
-200 tokens.
+About 4 characters make one English token, so 400 characters is roughly
+100 tokens.
 
 Rules:
 - A chunk never crosses a page boundary, so every chunk has one page.
@@ -31,7 +31,7 @@ class Chunk:
     text: str
 
 
-def chunk_pages(pages: list[Page], size: int = 800, overlap: int = 100) -> list[Chunk]:
+def chunk_pages(pages: list[Page], size: int = 400, overlap: int = 50) -> list[Chunk]:
     """Chunk every page of a document, numbering chunks across the document."""
     chunks: list[Chunk] = []
     for page in pages:

@@ -73,6 +73,28 @@ def test_a_real_answer_is_not_mistaken_for_the_refusal():
     assert not is_no_answer("You get 25 days of annual leave [1].")
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Both seen from qwen2.5:3b in the eval
+        "The provided sources do not mention anything about stock options or equity.",
+        "The sources provided do not contain information about eligibility for a company car.",
+        "The documents don't cover sabbaticals.",
+    ],
+)
+def test_paraphrased_refusals_are_detected(text):
+    assert is_no_answer(text)
+
+
+def test_a_cited_answer_that_mentions_a_gap_is_still_an_answer():
+    # Prompt rule 4: answer the covered part, then say what the documents don't cover.
+    assert not is_no_answer("Primary carers get 20 weeks at full pay [1]. The documents do not mention twins.")
+
+
+def test_an_uncited_answer_without_refusal_words_is_still_an_answer():
+    assert not is_no_answer("Larkspur-Guest.")
+
+
 def test_strip_citations():
     assert strip_citations("You get 25 days [1][2].") == "You get 25 days ."
 
