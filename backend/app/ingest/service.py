@@ -75,7 +75,11 @@ def save_upload(conn: psycopg.Connection, filename: str, data: bytes) -> Upload:
 
 
 def process_document(
-    conn: psycopg.Connection, document_id: int, embed: EmbedFn = embed_passages
+    conn: psycopg.Connection,
+    document_id: int,
+    embed: EmbedFn = embed_passages,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
 ) -> None:
     """Parse, chunk and embed a stored document. Never raises: errors become status='failed'."""
     doc = conn.execute(
@@ -86,7 +90,9 @@ def process_document(
 
     try:
         pages = parse(doc["filename"], doc["original"])
-        chunks = chunk_pages(pages, settings.chunk_size, settings.chunk_overlap)
+        size = settings.chunk_size if chunk_size is None else chunk_size
+        overlap = settings.chunk_overlap if chunk_overlap is None else chunk_overlap
+        chunks = chunk_pages(pages, size, overlap)
         vectors = embed([chunk.text for chunk in chunks])
     except EmptyDocument as exc:
         _mark_failed(conn, document_id, doc["content_hash"], str(exc))
@@ -124,12 +130,17 @@ def process_document(
 
 
 def ingest_file(
-    conn: psycopg.Connection, filename: str, data: bytes, embed: EmbedFn = embed_passages
+    conn: psycopg.Connection,
+    filename: str,
+    data: bytes,
+    embed: EmbedFn = embed_passages,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
 ) -> Upload:
-    """Both steps at once, for seeding sample docs and for tests."""
+    """Both steps at once, for seeding, tests and the eval (which varies chunk size)."""
     upload = save_upload(conn, filename, data)
     if not upload.unchanged:
-        process_document(conn, upload.document_id, embed)
+        process_document(conn, upload.document_id, embed, chunk_size, chunk_overlap)
     return upload
 
 
