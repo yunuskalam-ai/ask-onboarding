@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import auth, chat, documents, retrieve, tickets, users
+from app.api import admin, auth, chat, documents, retrieve, tickets, users
 from app.auth import seed_demo_users
 from app.config import settings
 from app.db import connect, init_schema
@@ -31,6 +31,7 @@ app = FastAPI(title="Ask Onboarding API", lifespan=lifespan)
 app.add_middleware(OriginCheckMiddleware)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(admin.router)
 app.include_router(documents.router)
 app.include_router(retrieve.router)
 app.include_router(chat.router)

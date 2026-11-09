@@ -11,7 +11,8 @@ from pydantic import BaseModel, Field, StringConstraints
 from app.chat.llm import StreamAnswerFn, stream_answer
 from app.chat.service import Event, Turn, answer_events
 from app.db import Connection
-from app.deps import SignedIn, get_conn, get_query_embedder
+from app.deps import SignedIn, get_conn, get_database_url, get_query_embedder
+from app.question_log import AskedQuestion, log_questions
 from app.retrieval.search import QueryEmbedFn, retrieve
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -40,12 +41,15 @@ def chat(
     conn: Annotated[Connection, Depends(get_conn)],
     embed: Annotated[QueryEmbedFn, Depends(get_query_embedder)],
     llm: Annotated[StreamAnswerFn, Depends(get_llm)],
+    database_url: Annotated[str, Depends(get_database_url)],
 ) -> StreamingResponse:
     # Retrieve before the response starts: the database connection is
     # closed once this function returns, while the stream keeps running.
     retrieval = retrieve(conn, body.question, embed=embed)
     history = [Turn(t.role, t.content) for t in body.history]
     events = answer_events(body.question, retrieval, history, llm)
+    # Logged for the admin overview once the stream ends (see app/question_log.py).
+    events = log_questions(events, AskedQuestion(user, body.question, retrieval.best_score), database_url)
     return StreamingResponse(
         _to_sse(events),
         media_type="text/event-stream",

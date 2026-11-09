@@ -58,7 +58,7 @@ def test_database_url() -> str:
 def db(test_database_url):
     """A connection to an empty test database."""
     with connect(test_database_url) as conn:
-        conn.execute("TRUNCATE documents, tickets, users, audit_log RESTART IDENTITY CASCADE")
+        conn.execute("TRUNCATE documents, tickets, users, audit_log, questions RESTART IDENTITY CASCADE")
         yield conn
 
 

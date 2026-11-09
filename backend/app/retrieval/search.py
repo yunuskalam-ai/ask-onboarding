@@ -57,6 +57,7 @@ class Retrieval:
     hits: list[Hit]  # best first
     answerable: bool  # False when the best similarity is under min_score
     min_score: float
+    best_score: float | None = None  # best cosine similarity among all candidates
 
 
 _COLUMNS = """
@@ -156,4 +157,4 @@ def retrieve(
     threshold = settings.min_score if min_score is None else min_score
     hits, best = _run(conn, question, top_k, embed, mode)
     answerable = best is not None and best >= threshold
-    return Retrieval(hits=hits, answerable=answerable, min_score=threshold)
+    return Retrieval(hits=hits, answerable=answerable, min_score=threshold, best_score=best)
