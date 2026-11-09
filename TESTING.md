@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with the Docs page). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with people, departments and reporting lines). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **357 passed**, 0 failed |
+| Backend tests | pytest | **418 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
-| Frontend tests | vitest | **91 passed**, 0 failed |
+| Frontend tests | vitest | **95 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 32 files |
+| Python types | mypy | 0 errors in 33 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -210,6 +210,24 @@ Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it
 | An SVG or PNG from `docs/` | `nosniff` and CSP `sandbox` | `test_images_are_served_inert` |
 | Links in a document: `javascript:`, `data:`, `//host`, `vbscript:`, climbing out of the repo | not followed | `resolveLink` tests |
 | Images: an external URL, `data:`, `docs/../.env`, a sub-folder, upper case | not loaded | `resolveImage` tests |
+
+### People, departments and reporting lines ([test_people.py](backend/tests/test_people.py), [test_ticket_workflow.py](backend/tests/test_ticket_workflow.py), [teamTree.test.ts](frontend/src/teamTree.test.ts))
+
+| Attempt | Expected | Test |
+| --- | --- | --- |
+| A duplicate email, a malformed email, a blank name, an unknown role, manager or department | 409 / 422, nobody added | `test_bad_new_people_are_refused` |
+| Reporting to an employee, or to an inactive manager | 422 | `test_only_managers_and_admins_can_have_reports`, `test_an_inactive_manager_cannot_take_new_reports` |
+| Reporting to yourself; a loop 2, 3 or 5 levels deep | 422, nothing changed | `test_nobody_reports_to_themselves`, `test_reporting_loops_are_refused_at_any_depth` |
+| Deactivating yourself; demoting the last **active** admin | 409 | `test_an_admin_cannot_deactivate_themselves`, `test_the_last_active_admin_cannot_be_demoted_or_deactivated` |
+| **Two admins deactivating each other at the same moment** | one is refused; exactly one active admin remains | `test_two_admins_deactivating_each_other_at_once_leave_one_admin` |
+| A deactivated person's open session, sign-in, and place on the sign-in list | 401 / 403 / gone, sessions deleted | `test_deactivating_signs_the_person_out_and_hides_them_from_sign_in` |
+| Making a manager with reports an employee | 409 "Reassign them first" | `test_a_manager_with_reports_cannot_become_an_employee` |
+| A duplicate department name (any case); deleting a department with people | 409 | `test_department_names_are_unique_ignoring_case`, `test_a_department_with_people_cannot_be_deleted` |
+| Employees or managers using any people or department endpoint (14 cases) | 403 | `test_only_admins_manage_people_and_departments` |
+| A manager seeing or changing another team's ticket | not listed; 404, the same as a missing ticket | `test_a_manager_cannot_see_or_change_another_teams_ticket` |
+| A manager changing their **own** ticket | 403; their manager or an admin can | `test_a_manager_cannot_change_their_own_ticket` |
+| Notifications for another team's manager, or an inactive manager | none | `test_another_teams_manager_hears_nothing`, `test_inactive_people_receive_nothing` |
+| A loop or a missing manager in the data shown on the People page | everyone still shown once, no hang | `buildTree` tests |
 
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
