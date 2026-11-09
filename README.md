@@ -28,16 +28,25 @@ docker compose up
 
 This starts Postgres (with pgvector), Ollama, the API and the web app.
 
-**Open http://localhost:8080.** The 18 sample documents load automatically on the first start (watch them turn *ready* on the Documents page, about a minute). Then ask questions on the Chat page, upload your own files on the Documents page, and see help-desk tickets for unanswered questions on the Tickets page.
+**Open http://localhost:8080.** Click **Sign in** and pick an account: there are no passwords in this demo. The 18 sample documents load automatically on the first start (watch them turn *ready* on the Documents page, about a minute). Then ask questions on the Chat page and see help-desk tickets for unanswered questions on the Tickets page. Sign in as the admin to upload your own files.
+
+| Account | Role | Can |
+| --- | --- | --- |
+| Sam Rivera, Priya Nair | Employee | Ask questions, open tickets, see their own tickets |
+| Jordan Lee | Manager | Also see every ticket |
+| Alex Morgan | Admin | Also upload documents and change people's roles (People page) |
+
+The server checks the role on every request, not just the UI.
 
 **The first start takes a few minutes:** it downloads the Ollama image and the `qwen2.5:3b` model (about 1.9 GB). The API waits until the model is ready. Later starts take seconds.
 
 The model runs on the CPU, so the first words of an answer take a few seconds. To use Claude instead, copy `.env.example` to `.env`, then set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
 
 - API docs (try the endpoints): http://localhost:8000/docs
-- Upload a file: `curl -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`
-- See document status: `curl localhost:8000/api/documents`
-- Ask a question (streams Server-Sent Events): `curl -N -H "Content-Type: application/json" -d '{"question": "Can I deploy on a Friday?"}' localhost:8000/api/chat`
+- The API needs a session. Sign in once and keep the cookie: `curl -c cookies.txt -H "Content-Type: application/json" -d '{"email": "alex@larkspur.example"}' localhost:8000/api/auth/sign-in`
+- Upload a file (admins): `curl -b cookies.txt -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`
+- See document status: `curl -b cookies.txt localhost:8000/api/documents`
+- Ask a question (streams Server-Sent Events): `curl -N -b cookies.txt -H "Content-Type: application/json" -d '{"question": "Can I deploy on a Friday?"}' localhost:8000/api/chat`
 
 **Deploying to a server:** [deploy/README.md](deploy/README.md) puts the same stack on a cloud server (Google Cloud free trial or Oracle Always Free), with HTTPS and a password in front.
 
