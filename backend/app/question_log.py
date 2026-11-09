@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from app.auth import User
 from app.chat.service import Event
 from app.db import connect
+from app.notifications import alert_admins
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ def log_questions(
     first_token: float | None = None
     outcome = "stopped"  # until a done or error event says otherwise
     sources: list[str] = []
+    error_message = ""
     try:
         for name, data in events:
             if name == "token" and first_token is None:
@@ -48,6 +50,7 @@ def log_questions(
                 sources = sorted({c["filename"] for c in data["citations"]})
             elif name == "error":
                 outcome = "error"
+                error_message = data.get("message", "")
             yield name, data
     finally:
         # Runs when the stream finishes, raises, or is closed because the client left.
@@ -60,6 +63,9 @@ def log_questions(
             first_token_ms=None if first_token is None else round((first_token - started) * 1000),
             total_ms=round((ended - started) * 1000),
         )
+        if outcome == "error":
+            # One alert per outage, not per question (alert_admins deduplicates by key).
+            alert_admins(database_url, "model", "The answer model failed", error_message)
 
 
 def _write(

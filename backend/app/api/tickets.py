@@ -22,7 +22,8 @@ from pydantic import BaseModel, StringConstraints
 from app.auth import record
 from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
 from app.db import Connection, one
-from app.deps import SignedIn, Staff, get_conn
+from app.deps import SignedIn, Staff, get_conn, get_database_url
+from app.notifications import alert_admins, ticket_opened, ticket_updated
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +55,12 @@ class DraftOut(BaseModel):
 
 
 @router.post("/draft")
-def draft(body: DraftIn, user: SignedIn, drafter: Annotated[DraftTicketFn, Depends(get_ticket_drafter)]) -> DraftOut:
+def draft(
+    body: DraftIn,
+    user: SignedIn,
+    drafter: Annotated[DraftTicketFn, Depends(get_ticket_drafter)],
+    database_url: Annotated[str, Depends(get_database_url)],
+) -> DraftOut:
     """Ask the model to draft a ticket through its create_ticket tool. Saves nothing.
 
     Never blocks the employee on the model: if the model is down or makes no
@@ -65,6 +71,7 @@ def draft(body: DraftIn, user: SignedIn, drafter: Annotated[DraftTicketFn, Depen
         result = drafter(body.question)
     except LLMError as exc:
         log.warning("Ticket draft fell back to the question: %s", exc)
+        alert_admins(database_url, "model", "The answer model failed", str(exc))
         result = None
     if result is None:
         return DraftOut(title=_title_from_question(body.question), summary="", drafted_by="fallback")
@@ -107,18 +114,21 @@ _COLUMNS = "id, title, question, summary, user_name, status, created_at, updated
 
 @router.post("", status_code=201)
 def create_ticket(body: TicketIn, user: SignedIn, conn: Conn) -> TicketOut:
-    # The owner comes from the session, never from the request body.
-    row = one(
-        conn.execute(
-            f"""
-            INSERT INTO tickets (title, question, summary, user_name, created_by)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING {_COLUMNS}
-            """,  # noqa: S608  # only a constant column list is interpolated; values are parameters
-            (body.title, body.question, body.summary, user.name, user.id),
+    # The owner comes from the session, never from the request body. The ticket,
+    # its audit entry and its notifications are saved together or not at all.
+    with conn.transaction():
+        row = one(
+            conn.execute(
+                f"""
+                INSERT INTO tickets (title, question, summary, user_name, created_by)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING {_COLUMNS}
+                """,  # noqa: S608  # only a constant column list is interpolated; values are parameters
+                (body.title, body.question, body.summary, user.name, user.id),
+            )
         )
-    )
-    record(conn, user, "ticket.create", ticket=row["id"], title=body.title)
+        record(conn, user, "ticket.create", ticket=row["id"], title=body.title)
+        ticket_opened(conn, row["id"], body.title, body.question, user)
     return TicketOut(**row)
 
 
@@ -154,6 +164,7 @@ def change_status(ticket_id: int, body: StatusIn, user: Staff, conn: Conn) -> Ti
             (ticket_id, user.id, user.name, current["status"], body.status, body.note),
         )
         record(conn, user, "ticket.status", ticket=ticket_id, old=current["status"], new=body.status)
+        ticket_updated(conn, ticket_id, user, current["status"], body.status, body.note)
     query = f"SELECT {_COLUMNS} FROM tickets WHERE id = %s"  # noqa: S608  # only a constant column list is interpolated; values are parameters
     row = one(conn.execute(query, (ticket_id,)))
     return TicketOut(**row, history=_history(conn, [ticket_id]).get(ticket_id, []))

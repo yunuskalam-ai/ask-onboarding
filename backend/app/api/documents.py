@@ -13,6 +13,7 @@ from app.db import Connection, connect
 from app.deps import Admin, SignedIn, get_conn, get_database_url, get_embedder
 from app.ingest.parsers import UnsupportedFileType
 from app.ingest.service import EmbedFn, process_document, save_upload
+from app.notifications import alert_admins
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -120,7 +121,11 @@ def get_document_file(document_id: int, user: SignedIn, conn: Conn) -> Response:
 
 def _process_in_background(database_url: str, document_id: int, embed: EmbedFn) -> None:
     with connect(database_url) as conn:
-        process_document(conn, document_id, embed)
+        error = process_document(conn, document_id, embed)
+        if error:
+            row = conn.execute("SELECT filename FROM documents WHERE id = %s", (document_id,)).fetchone()
+            name = row["filename"] if row else f"document {document_id}"
+            alert_admins(database_url, f"document:{name}", f"{name} could not be processed", error, "warning")
 
 
 def _get_document(conn: Connection, document_id: int) -> DocumentOut:

@@ -82,13 +82,17 @@ def process_document(
     embed: EmbedFn = embed_passages,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
-) -> None:
-    """Parse, chunk and embed a stored document. Never raises: errors become status='failed'."""
+) -> str | None:
+    """Parse, chunk and embed a stored document. Never raises: errors become status='failed'.
+
+    Returns the error message if the document failed, None otherwise, so the
+    application layer can tell an admin (this library doesn't notify anyone).
+    """
     doc = conn.execute(
         "SELECT filename, content_hash, original FROM documents WHERE id = %s", (document_id,)
     ).fetchone()
     if doc is None:
-        return  # deleted in the meantime
+        return None  # deleted in the meantime
 
     try:
         pages = parse(doc["filename"], doc["original"])
@@ -98,18 +102,19 @@ def process_document(
         vectors = embed([chunk.text for chunk in chunks])
     except EmptyDocument as exc:
         _mark_failed(conn, document_id, doc["content_hash"], str(exc))
-        return
+        return str(exc)
     except Exception:
         log.exception("Processing document %s failed", document_id)
-        _mark_failed(conn, document_id, doc["content_hash"], "Processing failed. Try uploading again.")
-        return
+        message = "Processing failed. Try uploading again."
+        _mark_failed(conn, document_id, doc["content_hash"], message)
+        return message
 
     with conn.transaction():
         current = conn.execute("SELECT content_hash FROM documents WHERE id = %s FOR UPDATE", (document_id,)).fetchone()
         if current is None or current["content_hash"] != doc["content_hash"]:
             # A newer upload replaced this file while we were embedding.
             # Its own job will store the new chunks, so we drop ours.
-            return
+            return None
 
         conn.execute("DELETE FROM chunks WHERE document_id = %s", (document_id,))
         with conn.cursor() as cur:
@@ -127,6 +132,7 @@ def process_document(
             "UPDATE documents SET status = 'ready', pages = %s, updated_at = now() WHERE id = %s",
             (Jsonb([{"number": p.number, "text": p.text} for p in pages]), document_id),
         )
+    return None
 
 
 def ingest_file(
