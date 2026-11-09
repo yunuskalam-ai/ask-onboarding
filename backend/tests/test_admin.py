@@ -1,11 +1,14 @@
 """The admin overview, question log and audit log: who can see them, and that the numbers are right."""
 
+from zoneinfo import ZoneInfo
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api.chat import get_llm
 from app.config import settings
+from app.db import one
 from app.deps import get_database_url, get_query_embedder
 from app.main import app
 from tests.conftest import add_user, sign_in_as
@@ -224,3 +227,31 @@ def test_a_chat_question_appears_in_the_admin_overview(client, db):
     assert logged["sources"] == ["eng.md"]
     assert logged["best_score"] == pytest.approx(1.0)
     assert client.get("/api/admin/overview").json()["questions"]["answered"] == 1
+
+
+# --- Days are counted in the viewer's time zone ------------------------------------------------
+
+
+@pytest.mark.parametrize("tz", ["UTC", "Asia/Dubai", "America/New_York"])
+def test_questions_are_counted_on_the_viewers_local_day(client, db, tz):
+    admin = sign_in_as(client, db, "admin")
+    # 00:30 UTC today: still yesterday evening in New York, already morning in Dubai.
+    at = one(
+        db.execute(
+            "INSERT INTO questions (at, user_id, user_name, question, outcome, total_ms) "
+            "VALUES (date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' + interval '30 minutes', "
+            "%s, %s, 'Q?', 'answered', 1) RETURNING at",
+            (admin.id, admin.name),
+        )
+    )["at"]
+    local_day = at.astimezone(ZoneInfo(tz)).date().isoformat()
+
+    per_day = client.get(f"/api/admin/overview?days=7&tz={tz}").json()["questions"]["per_day"]
+
+    assert {d["day"]: d["total"] for d in per_day if d["total"]} == {local_day: 1}
+
+
+@pytest.mark.parametrize("tz", ["Mars/Olympus_Mons", "UTC; DROP TABLE users", "../../etc", "x" * 65, ""])
+def test_unknown_time_zones_are_rejected(client, db, tz):
+    sign_in_as(client, db, "admin")
+    assert client.get("/api/admin/overview", params={"tz": tz}).status_code == 422

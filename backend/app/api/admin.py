@@ -8,7 +8,7 @@ at onboarding-tool scale these are millisecond queries.
 from datetime import date, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.db import Connection, one
@@ -20,6 +20,9 @@ Conn = Annotated[Connection, Depends(get_conn)]
 Days = Annotated[int, Query(ge=1, le=365, description="The period: the last N days")]
 Limit = Annotated[int, Query(ge=1, le=200)]
 Offset = Annotated[int, Query(ge=0, le=100_000)]
+# An IANA time zone name such as "Asia/Dubai": days are counted in the viewer's
+# time zone, so a question asked at 00:30 local time lands on the right day.
+TimeZone = Annotated[str, Query(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_+\-/]+$")]
 
 OUTCOMES = ("answered", "low_score", "not_in_sources", "refused", "error", "stopped")
 TICKET_STATUSES = ("open", "in_progress", "resolved", "closed")
@@ -64,8 +67,11 @@ class Overview(BaseModel):
 
 
 @router.get("/overview")
-def overview(admin: Admin, conn: Conn, days: Days = 30) -> Overview:
-    period = {"days": days}
+def overview(admin: Admin, conn: Conn, days: Days = 30, tz: TimeZone = "UTC") -> Overview:
+    # Postgres decides which names are valid, since it does the conversion.
+    if conn.execute("SELECT 1 FROM pg_timezone_names WHERE name = %s", (tz,)).fetchone() is None:
+        raise HTTPException(422, f"Unknown time zone '{tz}'.")
+    period = {"days": days, "tz": tz}
     since = "now() - make_interval(days => %(days)s)"
 
     q = one(
@@ -93,12 +99,13 @@ def overview(admin: Admin, conn: Conn, days: Days = 30) -> Overview:
         DayCount(**r)
         for r in conn.execute(
             """
-            SELECT d::date AS day,
+            WITH today AS (SELECT (now() AT TIME ZONE %(tz)s)::date AS local_today)
+            SELECT g.day::date AS day,
                    count(q.id) AS total,
                    count(q.id) FILTER (WHERE q.outcome = 'answered') AS answered
-            FROM generate_series(current_date - (%(days)s - 1), current_date, interval '1 day') AS d
-            LEFT JOIN questions q ON q.at::date = d::date
-            GROUP BY d ORDER BY d
+            FROM today, generate_series(today.local_today - (%(days)s - 1), today.local_today, interval '1 day') AS g(day)
+            LEFT JOIN questions q ON (q.at AT TIME ZONE %(tz)s)::date = g.day::date
+            GROUP BY g.day ORDER BY g.day
             """,
             period,
         )
