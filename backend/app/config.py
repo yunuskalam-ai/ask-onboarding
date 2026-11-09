@@ -7,9 +7,30 @@ defaults, which point at the database container's port on localhost.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 # The repo root: backend/app/config.py -> two levels up. In Docker this is /app.
 _ROOT = Path(__file__).resolve().parents[2]
+
+
+Effort = Literal["low", "medium", "high", "xhigh", "max"]
+
+
+def _choice[T: str](name: str, default: T, allowed: tuple[T, ...]) -> T:
+    """An environment variable that must be one of a few values. A typo fails
+    at startup with a clear message, instead of misbehaving later."""
+    value = os.environ.get(name, default)
+    if value not in allowed:
+        raise ValueError(f"{name}={value!r} is not valid. Use one of: {', '.join(allowed)}.")
+    return value
+
+
+def _http_url(name: str, default: str) -> str:
+    """A URL that must be http(s): urllib would also open file:// and others."""
+    value = os.environ.get(name, default).rstrip("/")
+    if not value.startswith(("http://", "https://")):
+        raise ValueError(f"{name}={value!r} must start with http:// or https://.")
+    return value
 
 
 @dataclass(frozen=True)
@@ -31,7 +52,7 @@ class Settings:
     ollama_model: str
     anthropic_api_key: str | None
     answer_model: str  # Claude model, used when llm_provider is "anthropic"
-    answer_effort: str  # low | medium | high | xhigh | max
+    answer_effort: Effort
     cookie_secure: bool  # send the session cookie over HTTPS only (true when deployed)
     seed_demo_users: bool  # create the demo accounts on first start
 
@@ -46,17 +67,17 @@ def load_settings() -> Settings:
         chunk_size=int(env("CHUNK_SIZE", "400")),
         chunk_overlap=int(env("CHUNK_OVERLAP", "50")),
         top_k=int(env("TOP_K", "5")),
-        search_mode=env("SEARCH_MODE", "hybrid"),
+        search_mode=_choice("SEARCH_MODE", "hybrid", ("vector", "hybrid")),
         min_score=float(env("MIN_SCORE", "0.55")),
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
         seed_sample_docs=env("SEED_SAMPLE_DOCS", "true").lower() in ("1", "true", "yes"),
         sample_docs_dir=env("SAMPLE_DOCS_DIR", str(_ROOT / "sample_docs")),
-        llm_provider=env("LLM_PROVIDER", "ollama"),
-        ollama_url=env("OLLAMA_URL", "http://localhost:11434"),
+        llm_provider=_choice("LLM_PROVIDER", "ollama", ("ollama", "anthropic")),
+        ollama_url=_http_url("OLLAMA_URL", "http://localhost:11434"),
         ollama_model=env("OLLAMA_MODEL", "qwen2.5:3b"),
         anthropic_api_key=env("ANTHROPIC_API_KEY") or None,
         answer_model=env("ANSWER_MODEL", "claude-sonnet-5-5"),
-        answer_effort=env("ANSWER_EFFORT", "low"),
+        answer_effort=_choice("ANSWER_EFFORT", "low", ("low", "medium", "high", "xhigh", "max")),
         cookie_secure=env("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
         seed_demo_users=env("SEED_DEMO_USERS", "true").lower() in ("1", "true", "yes"),
     )

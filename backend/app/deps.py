@@ -3,12 +3,11 @@
 from collections.abc import Iterator
 from typing import Annotated
 
-import psycopg
 from fastapi import Cookie, Depends, HTTPException
 
 from app.auth import Role, User, user_for_session
 from app.config import settings
-from app.db import connect
+from app.db import Connection, connect
 from app.ingest.embedder import embed_passages, embed_query
 from app.ingest.service import EmbedFn
 from app.retrieval.search import QueryEmbedFn
@@ -30,15 +29,16 @@ def get_conn(database_url: Annotated[str, Depends(get_database_url)]):
     yield from open_connection(database_url)
 
 
-def open_connection(database_url: str) -> Iterator[psycopg.Connection]:
+def open_connection(database_url: str) -> Iterator[Connection]:
     with connect(database_url) as conn:
         yield conn
 
 
 # --- Who is asking ---------------------------------------------------------
 
+
 def current_user(
-    conn: Annotated[psycopg.Connection, Depends(get_conn)],
+    conn: Annotated[Connection, Depends(get_conn)],
     ask_session: Annotated[str | None, Cookie()] = None,  # the cookie named auth.SESSION_COOKIE
 ) -> User:
     """The signed-in user, or 401. Every endpoint except health and sign-in needs one."""

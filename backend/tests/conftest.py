@@ -18,7 +18,31 @@ def sample_docs() -> Path:
 
 
 # --- Database -------------------------------------------------------------
+
+
+def _no_database_configured() -> str:
+    raise RuntimeError(
+        "This test reached the database through the app without pointing it at the test database. "
+        "Use a client fixture that overrides get_database_url."
+    )
+
+
+@pytest.fixture(autouse=True)
+def _keep_tests_off_the_dev_database():
+    """The app's default DATABASE_URL is the developer's real database. Before
+    each test, point the app's database dependency at an error, so a test that
+    forgets to choose the test database fails instead of touching real data.
+    Client fixtures replace this with the test database's URL."""
+    from app.deps import get_database_url
+    from app.main import app
+
+    app.dependency_overrides[get_database_url] = _no_database_configured
+    yield
+    app.dependency_overrides.pop(get_database_url, None)
+
+
 # Tests use their own database, <name>_test, so they never touch dev data.
+
 
 @pytest.fixture(scope="session")
 def test_database_url() -> str:
@@ -62,6 +86,7 @@ def other_db(test_database_url):
 
 # --- Users ----------------------------------------------------------------
 
+
 def add_user(conn, role: str = "employee", name: str | None = None, email: str | None = None) -> User:
     name = name or f"Test {role.title()}"
     email = email or f"{name.lower().replace(' ', '.')}@test.example"
@@ -86,6 +111,7 @@ TEST_USER = User(id=0, email="tester@test.example", name="Tester", role="employe
 
 
 # --- Embeddings -----------------------------------------------------------
+
 
 def fake_embed(texts: list[str]) -> list[np.ndarray]:
     """Deterministic stand-in for the real model: same text, same vector.

@@ -6,17 +6,17 @@ See app/auth.py for what is real and what a production deployment would change.
 
 from typing import Annotated
 
-import psycopg
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from pydantic import BaseModel, StringConstraints
 
 from app import auth
 from app.config import settings
+from app.db import Connection
 from app.deps import SignedIn, get_conn
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-Conn = Annotated[psycopg.Connection, Depends(get_conn)]
+Conn = Annotated[Connection, Depends(get_conn)]
 
 
 class UserOut(BaseModel):
@@ -37,11 +37,18 @@ def accounts(conn: Conn) -> list[UserOut]:
 
 
 @router.post("/sign-in")
-def sign_in(body: SignInIn, response: Response, conn: Conn) -> UserOut:
+def sign_in(
+    body: SignInIn,
+    response: Response,
+    conn: Conn,
+    ask_session: Annotated[str | None, Cookie()] = None,
+) -> UserOut:
     user = auth.get_user_by_email(conn, body.email)
     if user is None:
         raise HTTPException(404, "There is no account with that email.")
-    token = auth.start_session(conn, user)
+    if ask_session:
+        auth.end_session(conn, ask_session)  # switching accounts: the old session ends, not lingers
+    token = auth.start_session(conn, user)  # always a new token, never the one the browser sent
     response.set_cookie(
         auth.SESSION_COOKIE,
         token,

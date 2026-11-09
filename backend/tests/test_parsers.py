@@ -32,7 +32,7 @@ def test_markdown_is_one_page_kept_as_written(sample_docs):
 
 
 def test_windows_line_endings_and_bom_are_normalised():
-    data = "﻿line one\r\nline two\r\n".encode("utf-8")
+    data = "﻿line one\r\nline two\r\n".encode()
     [page] = parse("notes.txt", data)
     assert page.text == "line one\nline two\n"
 

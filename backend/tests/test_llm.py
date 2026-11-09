@@ -7,17 +7,27 @@ import json
 import threading
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import ClassVar
 
 import pytest
 
 from app.chat import llm
-from app.chat.llm import LLMError, TicketDraft, draft_ticket_ollama, parse_ticket_arguments, stream_answer, stream_ollama
+from app.chat.llm import (
+    LLMError,
+    TicketDraft,
+    draft_ticket_ollama,
+    parse_ticket_arguments,
+    stream_answer,
+    stream_ollama,
+)
 
 
 class FakeOllama(BaseHTTPRequestHandler):
     status = 200
-    lines: list[bytes] = []
-    received: list[dict] = []
+    # Class attributes on purpose: the test server makes a new handler per
+    # request, so state shared with the test has to live on the class.
+    lines: ClassVar[list[bytes]] = []
+    received: ClassVar[list[dict]] = []
 
     reply: dict | None = None  # if set, sent as one JSON body (non-streaming calls)
 
@@ -120,6 +130,7 @@ def test_unknown_provider_is_rejected(monkeypatch):
 
 # --- Ticket drafting through a tool call -------------------------------------
 
+
 def _tool_reply(name="create_ticket", arguments=None):
     call = {"function": {"name": name, "arguments": arguments}}
     return {"message": {"role": "assistant", "content": "", "tool_calls": [call]}, "done": True}
@@ -171,3 +182,17 @@ def test_tool_arguments_are_validated(arguments, expected):
 def test_overlong_tool_arguments_are_cut():
     draft = parse_ticket_arguments({"title": "t" * 500, "summary": "s" * 5000})
     assert len(draft.title) == 120 and len(draft.summary) == 1000
+
+
+def test_warm_up_loads_the_model_with_the_same_options_as_chat(ollama, monkeypatch):
+    server, base = ollama
+    server.reply = {"done": True}
+    monkeypatch.setattr(llm, "settings", replace(llm.settings, llm_provider="ollama", ollama_url=base))
+
+    llm.warm_up()
+
+    [request] = server.received
+    assert request["path"] == "/api/generate"
+    # Same keep_alive and num_ctx as chat, or Ollama would load the model twice.
+    assert request["body"]["options"] == llm._OLLAMA_COMMON["options"]
+    assert request["body"]["keep_alive"] == llm._OLLAMA_COMMON["keep_alive"]

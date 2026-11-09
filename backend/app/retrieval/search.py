@@ -29,9 +29,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
-import psycopg
 
 from app.config import settings
+from app.db import Connection
 from app.ingest.embedder import embed_query
 
 QueryEmbedFn = Callable[[str], np.ndarray]
@@ -73,7 +73,7 @@ _VECTOR_SQL = f"""
     WHERE d.status = 'ready'          -- never answer from a half-processed or failed file
     ORDER BY c.embedding <=> %(emb)s
     LIMIT %(top_k)s
-"""
+"""  # noqa: S608  # only a constant column list is interpolated; values are parameters
 
 # plainto_tsquery drops stop words and stems ("parking" -> 'park') but joins
 # the words with AND (&), and a whole question rarely matches every word.
@@ -111,11 +111,11 @@ _HYBRID_SQL = f"""
     JOIN documents d ON d.id = c.document_id
     ORDER BY f.rrf DESC, c.id
     LIMIT %(top_k)s
-"""
+"""  # noqa: S608  # only a constant column list is interpolated; values are parameters
 
 
 def _run(
-    conn: psycopg.Connection, question: str, top_k: int | None, embed: QueryEmbedFn, mode: str | None
+    conn: Connection, question: str, top_k: int | None, embed: QueryEmbedFn, mode: str | None
 ) -> tuple[list[Hit], float | None]:
     mode = mode or settings.search_mode
     if mode not in ("vector", "hybrid"):
@@ -128,16 +128,13 @@ def _run(
         "rrf_k": RRF_K,
     }
     rows = conn.execute(_VECTOR_SQL if mode == "vector" else _HYBRID_SQL, params).fetchall()
-    hits = [
-        Hit(**{k: v for k, v in row.items() if k != "best_score"} | {"score": float(row["score"])})
-        for row in rows
-    ]
+    hits = [Hit(**{k: v for k, v in row.items() if k != "best_score"} | {"score": float(row["score"])}) for row in rows]
     best = float(rows[0]["best_score"]) if rows else None
     return hits, best
 
 
 def search(
-    conn: psycopg.Connection,
+    conn: Connection,
     question: str,
     top_k: int | None = None,
     embed: QueryEmbedFn = embed_query,
@@ -148,7 +145,7 @@ def search(
 
 
 def retrieve(
-    conn: psycopg.Connection,
+    conn: Connection,
     question: str,
     top_k: int | None = None,
     min_score: float | None = None,

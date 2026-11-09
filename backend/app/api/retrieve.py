@@ -7,10 +7,10 @@ without calling the LLM.
 
 from typing import Annotated
 
-import psycopg
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, StringConstraints
 
+from app.db import Connection
 from app.deps import SignedIn, get_conn, get_query_embedder
 from app.retrieval.search import QueryEmbedFn, retrieve
 
@@ -46,7 +46,7 @@ class RetrieveOut(BaseModel):
 def retrieve_chunks(
     body: RetrieveIn,
     user: SignedIn,
-    conn: Annotated[psycopg.Connection, Depends(get_conn)],
+    conn: Annotated[Connection, Depends(get_conn)],
     embed: Annotated[QueryEmbedFn, Depends(get_query_embedder)],
 ) -> RetrieveOut:
     result = retrieve(conn, body.question, top_k=body.top_k, embed=embed)

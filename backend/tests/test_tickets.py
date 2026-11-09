@@ -75,7 +75,9 @@ def test_draft_saves_nothing(client):
 
 def test_create_then_list_newest_first(client):
     first = client.post("/api/tickets", json=TICKET)
-    second = client.post("/api/tickets", json={**TICKET, "title": "Company car", "question": "Can I get a company car?"})
+    second = client.post(
+        "/api/tickets", json={**TICKET, "title": "Company car", "question": "Can I get a company car?"}
+    )
 
     assert first.status_code == 201
     assert first.json()["status"] == "open"

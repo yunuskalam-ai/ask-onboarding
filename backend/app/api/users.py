@@ -2,17 +2,17 @@
 
 from typing import Annotated
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app import auth
 from app.api.auth import UserOut
+from app.db import Connection
 from app.deps import Admin, get_conn
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-Conn = Annotated[psycopg.Connection, Depends(get_conn)]
+Conn = Annotated[Connection, Depends(get_conn)]
 
 
 class RoleIn(BaseModel):

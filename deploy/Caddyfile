@@ -5,6 +5,9 @@
 	basic_auth {
 		{$DEMO_USER} {$DEMO_PASSWORD_HASH}
 	}
+	# Browsers must use HTTPS for this site from now on (nginx can't know the
+	# site is HTTPS; Caddy terminates TLS). A year, as is usual.
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy web:80 {
 		# Send chat tokens to the browser as soon as they arrive.
 		flush_interval -1

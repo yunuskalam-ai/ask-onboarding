@@ -4,20 +4,19 @@ from datetime import datetime
 from typing import Annotated, Literal
 from urllib.parse import quote
 
-import psycopg
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 
-from app.config import settings
-from app.db import connect
 from app.auth import record
+from app.config import settings
+from app.db import Connection, connect
 from app.deps import Admin, SignedIn, get_conn, get_database_url, get_embedder
 from app.ingest.parsers import UnsupportedFileType
 from app.ingest.service import EmbedFn, process_document, save_upload
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
-Conn = Annotated[psycopg.Connection, Depends(get_conn)]
+Conn = Annotated[Connection, Depends(get_conn)]
 
 
 class DocumentOut(BaseModel):
@@ -100,16 +99,22 @@ _MEDIA_TYPES = {"pdf": "application/pdf", "md": "text/markdown; charset=utf-8", 
 @router.get("/{document_id}/file")
 def get_document_file(document_id: int, user: SignedIn, conn: Conn) -> Response:
     """The original uploaded file. PDFs open in the browser's viewer (add #page=N)."""
-    row = conn.execute(
-        "SELECT filename, file_type, original FROM documents WHERE id = %s", (document_id,)
-    ).fetchone()
+    row = conn.execute("SELECT filename, file_type, original FROM documents WHERE id = %s", (document_id,)).fetchone()
     if row is None:
         raise HTTPException(404, "Document not found.")
     return Response(
         content=bytes(row["original"]),
         media_type=_MEDIA_TYPES[row["file_type"]],
-        # inline: show in the browser instead of downloading
-        headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(row['filename'])}"},
+        headers={
+            # inline: show in the browser instead of downloading
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(row['filename'])}",
+            # Never guess the type: a .txt containing HTML stays plain text.
+            "X-Content-Type-Options": "nosniff",
+            # Text files: even if a browser rendered one as a page, it could run
+            # no script and reach no cookie. (Not for PDFs: Chrome refuses to show
+            # a sandboxed PDF, and its viewer already isolates PDF scripts.)
+            **({} if row["file_type"] == "pdf" else {"Content-Security-Policy": "sandbox; default-src 'none'"}),
+        },
     )
 
 
@@ -118,8 +123,10 @@ def _process_in_background(database_url: str, document_id: int, embed: EmbedFn) 
         process_document(conn, document_id, embed)
 
 
-def _get_document(conn: psycopg.Connection, document_id: int) -> DocumentOut:
+def _get_document(conn: Connection, document_id: int) -> DocumentOut:
     row = conn.execute(_SELECT + " WHERE d.id = %s", (document_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "Document not found.")
     return DocumentOut(**row)
 
 

@@ -151,4 +151,5 @@ It uses a separate `ask_onboarding_eval` database and writes full results to `ev
 ## Docs
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): how a question flows through the system, the choices and what didn't work, scaling, failure modes, quality and RAG vs. fine-tuning
+- [TESTING.md](TESTING.md): test strategy, the negative and security tests with their results, coverage, and what isn't covered
 - [AI_LOG.md](AI_LOG.md): how AI tools were used to build this
