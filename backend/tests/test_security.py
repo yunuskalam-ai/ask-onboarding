@@ -105,7 +105,7 @@ def test_switching_accounts_ends_the_previous_session(client, db):
 
 
 @pytest.mark.parametrize("token", ["", " ", "x" * 10_000, "' OR '1'='1", "../../etc/passwd"])
-def test_junk_session_cookies_are_refused(token):
+def test_junk_session_cookies_are_refused(client, token):  # client: points the app at the test database
     assert TestClient(app, cookies={SESSION_COOKIE: token}).get("/api/auth/me").status_code == 401
 
 

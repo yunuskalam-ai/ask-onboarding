@@ -65,6 +65,7 @@ Mistakes the checks caught *during* this work, before any commit:
 - **nginx forwarded the host without its port,** so every same-site POST would have been refused. Caught by testing through nginx, not only against the API.
 - **A lint-suppression comment was placed inside a multi-line SQL string,** where it would have become part of the query. Caught by ruff, which still reported the error, then verified by the full suite.
 - **A frontend test meant to check a backslash didn't contain one,** because of a TypeScript escape. Caught by the linter (`no-useless-escape`) and by the test itself.
+- **A test ran against the developer's real database.** It forgot the test-database fixture, and passed locally because that database had the tables. **CI caught it,** because its database is empty. Fixed, plus a guard in [conftest.py](backend/tests/conftest.py): during tests, the app's database dependency points at an error until a test explicitly chooses the test database. With the guard, the same slip fails locally with a clear message.
 
 ## Negative and security tests
 
