@@ -181,14 +181,20 @@ export async function streamChat(
 
 export type TicketDraft = { title: string; summary: string; drafted_by: "model" | "fallback" };
 
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+
+export type TicketEvent = { at: string; user_name: string; from_status: TicketStatus; to_status: TicketStatus; note: string };
+
 export type Ticket = {
   id: number;
   title: string;
   question: string;
   summary: string;
   user_name: string;
-  status: "open" | "closed";
+  status: TicketStatus;
   created_at: string;
+  updated_at: string;
+  history: TicketEvent[]; // oldest first
 };
 
 /** The model drafts a ticket through its create_ticket tool. Nothing is saved yet. */
@@ -199,3 +205,7 @@ export const createTicket = (ticket: { title: string; question: string; summary:
   sendJson<Ticket>("POST", "/api/tickets", ticket);
 
 export const listTickets = () => getJson<Ticket[]>("/api/tickets");
+
+/** Managers and admins: move a ticket to a new status, with an optional note the employee sees. */
+export const changeTicketStatus = (id: number, status: TicketStatus, note: string) =>
+  sendJson<Ticket>("PATCH", `/api/tickets/${id}`, { status, note });
