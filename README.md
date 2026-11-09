@@ -42,8 +42,8 @@ This starts Postgres (with pgvector), Ollama, the API and the web app.
 | Account | Role | Can |
 | --- | --- | --- |
 | Sam Rivera, Priya Nair | Employee | Ask questions, open tickets, see their own tickets |
-| Jordan Lee | Manager | Also see every ticket |
-| Alex Morgan | Admin | Also upload documents and change people's roles (People page) |
+| Jordan Lee | Manager | Also see their team's tickets (Sam and Priya report to Jordan) and browse the documents |
+| Alex Morgan | Admin | Everything: all tickets, upload and delete documents, people and departments, the Overview, alerts and the project docs |
 
 The server checks the role on every request, not just the UI.
 

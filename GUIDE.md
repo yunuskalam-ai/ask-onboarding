@@ -24,7 +24,8 @@ Everyone signs in, and each person has one of three roles:
 | Open help-desk tickets | Yes | Yes | Yes |
 | See tickets | Their own | Their own and their team's | Everyone's |
 | Update a ticket's status and reply with a note | – | Their team's | Yes |
-| Add or replace company documents | – | – | Yes |
+| Browse the document library | – | Yes | Yes |
+| Add, replace or delete company documents | – | – | Yes |
 | Add people; set roles, managers and departments; deactivate leavers | – | – | Yes |
 | See the Overview (usage, gaps, activity) and the project docs | – | – | Yes |
 | Notifications | About their own tickets | About their team's tickets | About all tickets, plus system problems |
@@ -82,12 +83,13 @@ The **bell** shows a red number when something new needs your attention. Click i
 
 You're never notified about something you did yourself. If the same problem keeps happening, admins get **one** alert that counts the repeats, not a flood.
 
-### Documents (admins)
+### Documents (managers and admins)
 
-**Documents** lists the library the assistant answers from. Admins upload PDF, Markdown (`.md`) and plain-text (`.txt`) files, up to 20 MB each. Word files aren't supported yet: save them as PDF first.
+Employees don't need this tab: they get their answers, with links to the exact sources, in the chat. **Documents** lists the library the assistant answers from; managers can browse it. Admins upload PDF, Markdown (`.md`) and plain-text (`.txt`) files, up to 20 MB each. Word files aren't supported yet: save them as PDF first.
 - A new file shows **processing**, then **ready** after a few seconds.
 - Uploading a file with the same name **replaces** the old version straight away: the old text can no longer be quoted.
 - If a file can't be read (for example a scanned PDF with no text in it), it shows **failed** with the reason, and admins get an alert.
+- Admins can **delete** a document (they're asked to confirm). The assistant stops using it immediately.
 
 ### People (admins)
 

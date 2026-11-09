@@ -9,7 +9,7 @@ This page answers the brief's six questions. **[TECHNICAL.md](TECHNICAL.md)** is
 | | Phase 1: the brief | Phase 2: added since |
 | --- | --- | --- |
 | Answers | upload, cited streamed answers, "not in the documents", ticket by tool call | typing indicator |
-| Quality | 20-question eval, hybrid search | CI, 446 + 95 tests, 97% coverage, [TESTING.md](TESTING.md) |
+| Quality | 20-question eval, hybrid search | CI, 456 + 95 tests, 97% coverage, [TESTING.md](TESTING.md) |
 | People | – | sign-in, three roles enforced by the server; departments and reporting lines (managers handle their team's tickets); People page |
 | Operations | `docker compose up` | ticket workflow, notifications and admin alerts, admin Overview (KPIs, question log, audit), Docs page, security hardening, public deployment |
 
@@ -25,7 +25,7 @@ This page answers the brief's six questions. **[TECHNICAL.md](TECHNICAL.md)** is
 8. **Guard 2: refusal detection.** An exact refusal, or an uncited paraphrase of one, ends with `answered: false`, and the chat offers a ticket. Otherwise the final event lists only the sources the answer cited, with file, page and character offsets. Clicking `[n]` highlights exactly that passage.
 9. **Logged.** When the stream ends, however it ends, the question, outcome, sources and timing go into the question log, which the admin Overview reads.
 
-**Uploads** (admins only) are stored as `processing`. Old chunks for the same filename are deleted **in the same transaction**, so replaced text is never searchable. A background task parses, chunks (400 characters, 50 overlap, never across PDF pages) and embeds the file, then writes the chunks and `ready` together.
+**Uploads and deletes** (admins only; managers can browse the library, employees only open what answers cite). Uploads are stored as `processing`. Old chunks for the same filename are deleted **in the same transaction**, so replaced text is never searchable. A background task parses, chunks (400 characters, 50 overlap, never across PDF pages) and embeds the file, then writes the chunks and `ready` together.
 
 ## 2. Choices, and what didn't work
 
@@ -81,7 +81,7 @@ Checked by stopping the Ollama container:
 - **Every pull request runs the gates in CI:**
   - lint, including security rules
   - type checks
-  - 446 backend and 95 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
+  - 456 backend and 95 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
   - a **95% coverage floor**
   - dependency audits
   - both Docker images
