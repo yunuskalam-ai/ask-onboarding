@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NO_ANSWER, streamChat, type Citation, type DoneReason, type Turn } from "../api";
 import AnswerText from "../components/AnswerText";
 import LibraryNotice from "../components/LibraryNotice";
+import TypingIndicator from "../components/TypingIndicator";
 import SourcePanel from "../components/SourcePanel";
 import TicketOffer from "../components/TicketOffer";
 
@@ -115,7 +116,7 @@ export default function ChatPage() {
               </div>
             ) : (
               <div key={m.id} className={`msg assistant ${m.reason && m.reason !== "answered" ? "no-answer" : ""}`}>
-                {m.state === "streaming" && !m.text && <span className="muted">Searching the documents…</span>}
+                {m.state === "streaming" && !m.text && <TypingIndicator />}
                 <AnswerText text={m.text} citations={m.citations} onCite={setSource} />
                 {m.state === "streaming" && m.text && <span className="cursor" aria-hidden />}
                 {m.state === "error" && (
