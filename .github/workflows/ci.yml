@@ -1,0 +1,91 @@
+# Every push to main and every pull request runs the same checks a reviewer
+# would: lint, types, all tests with a coverage floor, dependency audits, and
+# a build of both Docker images. A red check blocks the merge.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read # the workflow only reads the code
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint, types, tests, audit)
+    runs-on: ubuntu-24.04
+    services:
+      db:
+        image: pgvector/pgvector:0.8.0-pg16 # same as docker-compose.yml
+        env:
+          POSTGRES_USER: ask
+          POSTGRES_PASSWORD: ask
+          POSTGRES_DB: ask_onboarding
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ask -d ask_onboarding"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ask:ask@localhost:5432/ask_onboarding
+      EMBEDDING_CACHE_DIR: ${{ github.workspace }}/.models
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # the version in backend/Dockerfile
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: .models
+          key: fastembed-bge-small-en-v1.5
+      - run: pip install -r requirements-dev.txt
+      - name: Lint (ruff, including bandit security rules)
+        run: ruff check .
+      - name: Formatting
+        run: ruff format --check .
+      - name: Types (mypy)
+        run: mypy
+      - name: Tests with coverage (fails under 95%)
+        run: pytest -q --cov --cov-report=term --cov-fail-under=95
+      - name: Known vulnerabilities in dependencies
+        run: pip-audit --progress-spinner off
+
+  frontend:
+    name: Frontend (types, lint, tests, build, audit)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24" # the version in frontend/Dockerfile
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint (oxlint)
+        run: npx oxlint --deny-warnings
+      - name: Tests (vitest)
+        run: npm test
+      - name: Types and production build
+        run: npm run build
+      - name: Known vulnerabilities in dependencies
+        run: npm audit --audit-level=moderate
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build api web
