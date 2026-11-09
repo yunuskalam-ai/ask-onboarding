@@ -293,3 +293,26 @@ select { font: inherit; color: inherit; background: var(--surface); border: 1px 
   .brand { font-size: 0; gap: 0; }
   .brand-mark { font-size: 0.95rem; }
 }
+
+/* --- Ticket workflow --- */
+.filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.25rem; }
+.filters button { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.9rem; }
+.filters button.on { border-color: var(--accent); background: var(--user-bg); }
+.filters .count { color: var(--muted); font-size: 0.8rem; margin-left: 0.2rem; }
+.status-pill { font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.6rem; border-radius: 999px; white-space: nowrap; border: 1px solid currentColor; }
+.status-pill.open { color: var(--processing); }
+.status-pill.in_progress { color: var(--role-employee); }
+.status-pill.resolved { color: var(--ready); }
+.status-pill.closed { color: var(--muted); }
+.history { margin-top: 0.6rem; font-size: 0.9rem; }
+.history summary { cursor: pointer; color: var(--muted); }
+.history ol { list-style: none; margin: 0.5rem 0 0; padding: 0 0 0 0.8rem; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
+.history .small { margin: 0; }
+.history blockquote { margin: 0.25rem 0 0; padding: 0.4rem 0.7rem; background: var(--bg); border-radius: 6px; }
+.status-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px dashed var(--border); }
+.status-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.status-form .grow { flex: 1; min-width: 200px; }
+.status-form input { font-weight: 400; color: var(--text); padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.status-form button { padding: 0.45rem 1rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
+.status-form button:disabled { opacity: 0.5; cursor: default; }
+.status-form .notice { flex-basis: 100%; margin: 0; }
