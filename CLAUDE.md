@@ -21,6 +21,7 @@ A RAG take-home (employee Q&A over company docs) extended in Phase 2. Start with
 ## Gotchas (each cost time once)
 - **Backslashes in shell commands are eaten** by the harness. In Python scripts, build them with `chr(92)`; prefer writing scripts to a file.
 - **Git Bash rewrites `/app/...` paths** for `docker compose exec`: prefix `MSYS_NO_PATHCONV=1`.
+- **Wait loops need `curl -sf`**: plain `curl -s` exits 0 on a 502, so "wait until healthy" doesn't wait. Sign in only after the API answers.
 - **Edit scripts must assert each replacement matched once**; silent no-op edits shipped a bug before.
 - **`# noqa` goes after a closing `"""`**, never inside a SQL string.
 - **nginx must forward `$http_host`** (keeps the port) or the Origin check refuses same-site requests.
