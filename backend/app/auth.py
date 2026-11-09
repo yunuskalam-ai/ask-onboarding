@@ -32,10 +32,10 @@ SESSION_LIFETIME = timedelta(days=7)
 # (email, name, role, department, manager's email). Sam and Priya report to
 # Jordan, who reports to Alex. Managers come before their reports.
 DEMO_USERS: list[tuple[str, str, Role, str, str | None]] = [
-    ("alex@larkspur.example", "Alex Morgan", "admin", "People & Operations", None),
-    ("jordan@larkspur.example", "Jordan Lee", "manager", "Engineering", "alex@larkspur.example"),
-    ("sam@larkspur.example", "Sam Rivera", "employee", "Engineering", "jordan@larkspur.example"),
-    ("priya@larkspur.example", "Priya Nair", "employee", "Engineering", "jordan@larkspur.example"),
+    ("alex@yklabs.example", "Alex Morgan", "admin", "People & Operations", None),
+    ("jordan@yklabs.example", "Jordan Lee", "manager", "Engineering", "alex@yklabs.example"),
+    ("sam@yklabs.example", "Sam Rivera", "employee", "Engineering", "jordan@yklabs.example"),
+    ("priya@yklabs.example", "Priya Nair", "employee", "Engineering", "jordan@yklabs.example"),
 ]
 
 
@@ -97,6 +97,22 @@ def place_existing_demo_users(conn: Connection) -> bool:
     with conn.transaction():
         _place_demo_users(conn)
     return True
+
+
+# The demo company was renamed from Larkspur Labs to YK Labs.
+OLD_DEMO_DOMAIN, DEMO_DOMAIN = "@larkspur.example", "@yklabs.example"
+
+
+def rename_demo_domain(conn: Connection) -> int:
+    """Move demo accounts from the old company's email domain to the new one.
+    Safe to run on every start: afterwards nothing matches. Skips anyone whose
+    new address is already taken. Returns how many were renamed."""
+    return conn.execute(
+        "UPDATE users SET email = replace(email, %(old)s, %(new)s) "
+        "WHERE email LIKE '%%' || %(old)s "
+        "AND NOT EXISTS (SELECT 1 FROM users other WHERE other.email = replace(users.email, %(old)s, %(new)s))",
+        {"old": OLD_DEMO_DOMAIN, "new": DEMO_DOMAIN},
+    ).rowcount
 
 
 def active_accounts(conn: Connection) -> list[User]:
