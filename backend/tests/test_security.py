@@ -87,7 +87,7 @@ def test_same_origin_and_originless_requests_pass(client, db):
 
 def test_reads_are_not_blocked_by_origin(client, db):
     sign_in_as(client, db)
-    assert client.get("/api/documents", headers={"Origin": "https://evil.example"}).status_code == 200
+    assert client.get("/api/tickets", headers={"Origin": "https://evil.example"}).status_code == 200
 
 
 # --- Sessions --------------------------------------------------------------------------
