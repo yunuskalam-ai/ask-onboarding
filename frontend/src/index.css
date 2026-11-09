@@ -478,3 +478,24 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 .tree li { position: relative; padding: 0.25rem 0 0.25rem 0.9rem; border-left: 1px solid var(--border); }
 .tree li::before { content: ""; position: absolute; left: 0; top: 0.95rem; width: 0.7rem; border-top: 1px solid var(--border); }
 .tree .role-pill { margin-left: 0.2rem; }
+
+/* --- Alert details and system status --- */
+.alert-page { max-width: 900px; }
+.alert-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.alert-head h1 { margin: 0; }
+.severity { font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; color: #fff; background: var(--role-employee); }
+.severity.error { background: var(--failed); }
+.severity.warning { background: var(--processing); }
+.alert-message { margin: 0.75rem 0 1rem; padding: 0.6rem 0.9rem; border-left: 3px solid var(--failed); background: var(--surface); border-radius: 0 8px 8px 0; font-family: ui-monospace, Consolas, monospace; font-size: 0.88rem; }
+.status-panel { border-left: 4px solid var(--failed); }
+.status-panel.recovered { border-left-color: var(--ready); }
+.status-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.checks { list-style: none; margin: 0.25rem 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.checks li { display: flex; gap: 0.6rem; align-items: baseline; }
+.check-mark { flex: none; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%; color: #fff; font-size: 0.75rem; font-weight: 700; background: var(--failed); }
+.checks li.ok .check-mark { background: var(--ready); }
+.fix-steps { padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.fix-steps p { margin: 0 0 0.3rem; }
+.command { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; }
+.command code { flex: 1; overflow-x: auto; white-space: pre; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
+.copy { flex: none; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.8rem; cursor: pointer; }

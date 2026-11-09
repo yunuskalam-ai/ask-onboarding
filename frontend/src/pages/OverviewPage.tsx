@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import {
   ApiError,
   getOverview,
+  getSystemStatus,
   listAudit,
   listQuestions,
   type AuditEntry,
+  type HealthCheck,
   type LoggedQuestion,
   type Overview,
 } from "../api";
+import HealthChecks from "../components/HealthChecks";
 import { OUTCOME_LABEL, OUTCOME_ORDER, count, describeAudit, hours, localDate, percent, seconds } from "../overviewFormat";
 
 const PERIODS = [7, 30, 90];
@@ -165,6 +168,21 @@ export default function OverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const questions = usePaged<LoggedQuestion>(listQuestions);
+  const [status, setStatus] = useState<HealthCheck[] | null>(null);
+
+  // Live system status, refreshed every 30 seconds while the page is visible.
+  useEffect(() => {
+    const refresh = () => {
+      getSystemStatus()
+        .then(setStatus)
+        .catch(() => setStatus(null));
+    };
+    refresh();
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, []);
   const audit = usePaged<AuditEntry>(listAudit);
 
   useEffect(() => {
@@ -195,6 +213,13 @@ export default function OverviewPage() {
           ))}
         </div>
       </div>
+
+      {status && (
+        <div className={`panel status-panel ${status.every((c) => c.ok) ? "recovered" : "failing"}`}>
+          <h2>System status: {status.every((c) => c.ok) ? "all working" : "needs attention"}</h2>
+          <HealthChecks checks={status} />
+        </div>
+      )}
 
       {error && (
         <div className="notice error" role="alert">

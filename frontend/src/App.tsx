@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { RequireRole } from "./auth";
+import AlertPage from "./pages/AlertPage";
 import AppHeader from "./components/AppHeader";
 import ChatPage from "./pages/ChatPage";
 import DocumentsPage from "./pages/DocumentsPage";
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/chat" element={<RequireRole><ChatPage /></RequireRole>} />
           <Route path="/documents" element={<RequireRole><DocumentsPage /></RequireRole>} />
           <Route path="/tickets" element={<RequireRole><TicketsPage /></RequireRole>} />
+          <Route path="/alerts/:id" element={<RequireRole roles={["admin"]}><AlertPage /></RequireRole>} />
           <Route path="/overview" element={<RequireRole roles={["admin"]}><OverviewPage /></RequireRole>} />
           <Route path="/project-docs/:slug?" element={<RequireRole roles={["admin"]}><ProjectDocsPage /></RequireRole>} />
           <Route path="/people" element={<RequireRole roles={["admin"]}><PeoplePage /></RequireRole>} />
