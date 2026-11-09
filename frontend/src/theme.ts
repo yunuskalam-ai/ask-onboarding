@@ -1,7 +1,7 @@
 // Light, dark, or follow the system setting. The choice is stored in the
 // browser and applied as <html data-theme="...">; "system" removes the
-// attribute so the CSS media query decides. index.html applies the saved
-// choice before the page draws, so there is no flash of the wrong theme.
+// attribute so the CSS media query decides. public/theme-init.js applies the
+// saved choice before the page draws, so there is no flash of the wrong theme.
 
 export type Theme = "light" | "dark" | "system";
 
