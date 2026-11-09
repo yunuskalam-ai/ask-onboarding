@@ -1,96 +1,104 @@
-# Deploying to Oracle Cloud (Always Free)
+# Deploying Ask Onboarding
 
-This guide puts Ask Onboarding on a public HTTPS address, behind a password, at no cost. The server runs the same `docker compose` stack as your laptop, plus Caddy in front ([docker-compose.prod.yml](docker-compose.prod.yml)).
+This puts Ask Onboarding on a public HTTPS address, behind a password. The server runs the same `docker compose` stack as your laptop, plus Caddy in front ([docker-compose.prod.yml](docker-compose.prod.yml)):
 
-**Why Oracle:** the app runs a local model (qwen2.5:3b) that needs about 4 GB of RAM. Oracle's Always Free tier includes an ARM server with 4 CPUs and 24 GB of RAM. Most other free tiers give 1 GB or less.
+- **Only Caddy is reachable from the internet** (ports 80 and 443). The database, API and model can't be reached from outside.
+- **Caddy gets a free HTTPS certificate** and asks for a username and password, because the app has no login.
 
-**Time:** about 15 minutes of clicking, then about 15 minutes of building.
+The app runs a local model (qwen2.5:3b) that needs about 4 GB of RAM, so the server needs **at least 8 GB**. That rules out most free tiers, which give 1 GB or less. Two options work:
 
-## 1. Create the account
+| | Google Cloud free trial (recommended) | Oracle Cloud Always Free |
+| --- | --- | --- |
+| Cost | $300 credit for 90 days, with no charge afterwards unless you upgrade | Free forever |
+| Server | e2-standard-4: 4 CPUs, 16 GB | Ampere A1: 4 ARM CPUs, 24 GB |
+| Catch | Ends after 90 days | Free ARM servers are often **out of capacity**, especially in small regions |
 
-1. Sign up at https://signup.cloud.oracle.com.
-2. Pick your **home region** carefully, because it can't be changed later. Choose one near you.
-3. Oracle asks for a card to verify you are a real person. Always Free resources are never charged.
+Both need a card to verify you. After you connect to the server, the steps are the same.
 
-## 2. Create the server
+## Option A: Google Cloud (free trial)
 
-In the Oracle Cloud console, open **☰ → Compute → Instances → Create instance**.
+### 1. Start the trial
+
+Go to https://cloud.google.com/free, click **Get started for free**, and sign in with a Google account. Enter your country and card, and you get $300 of credit for 90 days.
+
+### 2. Create the server
+
+In the console, open **☰ → Compute Engine → VM instances**. If asked, click **Enable** for the Compute Engine API and wait a minute. Then click **Create instance**:
 
 | Setting | Value |
 | --- | --- |
 | Name | `ask-onboarding` |
-| Image | **Change image → Ubuntu → Canonical Ubuntu 24.04**. Pick the normal image, not "Minimal". |
-| Shape | **Change shape → Ampere → VM.Standard.A1.Flex**, with **4 OCPUs** and **24 GB** of memory. It shows an "Always Free-eligible" label. |
-| Networking | Keep the defaults: a new virtual cloud network with a public subnet. Make sure **Assign a public IPv4 address** is on. |
-| SSH keys | **Generate a key pair for me → Save private key**. Keep the file safe, for example as `C:\Users\<you>\.ssh\oracle-ask.key`. |
-| Boot volume | Optional: set the size to **100 GB**. Up to 200 GB in total is free; the default 47 GB also works. |
+| Region | One near you, for example `me-central1 (Doha)` or `europe-west2 (London)`. Any zone. |
+| Machine configuration | **E2 → e2-standard-4** (4 vCPUs, 16 GB) |
+| OS and storage → Change | **Ubuntu → Ubuntu 24.04 LTS (x86/64)**, not "Minimal". **Balanced persistent disk, 50 GB**. The default 10 GB is too small: the images and the model need about 20 GB. |
+| Networking → Firewall | Tick **Allow HTTP traffic** and **Allow HTTPS traffic** |
 
-Click **Create**. When the instance shows **Running**, copy its **Public IP address**.
+Click **Create**. The estimate on the right of the page should show about $100–130 a month, which comes out of the credit.
 
-> **"Out of capacity"?** Free ARM servers are popular. Try another **Availability domain** on the same page, or try again a few hours later.
+**Optional, but recommended:** keep the address from changing. A Google server gets a new public IP if it's stopped and started again, and the site address is built from the IP. To keep it, go to **☰ → VPC network → IP addresses**, find the server's external address, then click **⋮ → Promote to static IP address**.
 
-## 3. Open ports 80 and 443 in Oracle's firewall
+### 3. Connect
 
-On the instance page, click the **subnet** link, then **Security → Default Security List**. Click **Add Ingress Rules**:
+On the **VM instances** page, click **SSH** on the server's row. A terminal opens in your browser; click **Authorize** if asked. Then continue with [Install and start](#install-and-start).
 
-| Field | Value |
-| --- | --- |
-| Source CIDR | `0.0.0.0/0` |
-| IP Protocol | TCP |
-| Destination Port Range | `80,443` |
+## Option B: Oracle Cloud (Always Free)
 
-The server has a second firewall of its own; the setup script opens that one.
+1. **Account.** Sign up at https://signup.cloud.oracle.com. Your home region can't be changed later, and free servers only run there.
+2. **Server.** Open **☰ → Compute → Instances → Create instance**:
+   - **Image:** Canonical Ubuntu 24.04, not "Minimal".
+   - **Shape:** **Ampere → VM.Standard.A1.Flex**, with 4 OCPUs and 24 GB, or 2 OCPUs and 12 GB, which is easier to get.
+   - **Public IP:** on.
+   - **SSH key:** choose **Generate a key pair for me** and save the private key.
+   - **"Out of capacity":** try another availability domain or try later. Upgrading the account to Pay As You Go helps the most; Always Free resources stay free.
+3. **Firewall.** On the instance page, click the subnet, then **Security → Default Security List → Add Ingress Rules**: source `0.0.0.0/0`, TCP, destination ports `80,443`.
+4. **Connect** from PowerShell. The first command makes the key readable only by you, because SSH refuses keys that other users can read:
+   ```powershell
+   icacls $HOME\.ssh\oracle-ask.key /inheritance:r /grant:r "$($env:USERNAME):R"
+   ssh -i $HOME\.ssh\oracle-ask.key ubuntu@<public-ip>
+   ```
 
-## 4. Connect to the server
+Oracle can stop Always Free servers that stay almost idle for 7 days. Pay As You Go accounts are exempt.
 
-From PowerShell on Windows, first make the key readable only by you (SSH refuses keys other users can read), then connect:
-
-```powershell
-icacls $HOME\.ssh\oracle-ask.key /inheritance:r /grant:r "$($env:USERNAME):R"
-ssh -i $HOME\.ssh\oracle-ask.key ubuntu@<public-ip>
-```
-
-Type `yes` when it asks whether to trust the server.
-
-## 5. Install and start
+## Install and start
 
 On the server:
 
 ```bash
 git clone https://github.com/yunuskalam-ai/ask-onboarding.git
 cd ask-onboarding
-bash deploy/oracle/setup.sh
+bash deploy/setup.sh
 ```
 
 The script ([setup.sh](setup.sh)) does four things:
-1. Opens ports 80 and 443 in the server's firewall.
-2. Installs Docker.
-3. Asks you for a **username and password for the site** and writes `.env`, which stores only a hash of the password.
-4. Runs `docker compose up -d --build`.
+1. **Opens ports 80 and 443 in the server's own firewall.** Oracle needs this; on Google it changes nothing.
+2. **Installs Docker.**
+3. **Asks for a username and password for the site** and writes `.env`. It stores only a hash of the password, and a random database password.
+4. **Runs `docker compose up -d --build`.**
 
-The address is your IP with dashes, through [sslip.io](https://sslip.io), for example `https://140-238-1-2.sslip.io`. This gives Caddy a host name it can get a free HTTPS certificate for, without you buying a domain.
+The site address is your server's IP with dashes, through [sslip.io](https://sslip.io), for example `https://34-18-1-2.sslip.io`. This gives Caddy a host name it can get a certificate for, without you buying a domain.
 
-The first start builds the images and downloads the model, about 10–15 minutes in total. Then open the address and log in with the username and password you chose.
+The first start builds the images and downloads the model, about 10–15 minutes on a cloud network. Then open the address and log in.
 
 ## Day-to-day
 
 | Task | Command (in `~/ask-onboarding`) |
 | --- | --- |
 | Watch the logs | `sudo docker compose logs -f` |
+| Check that everything runs | `sudo docker compose ps` |
 | Deploy new commits | `git pull && sudo docker compose up -d --build` |
 | Stop / start | `sudo docker compose stop` / `sudo docker compose up -d` |
-| Change the password | Delete `.env`, run `bash deploy/oracle/setup.sh` again, then `sudo docker compose up -d --force-recreate caddy` |
+| Change the password | Delete `.env`, run `bash deploy/setup.sh` again, then `sudo docker compose up -d --force-recreate caddy` |
 
-Documents, tickets and the model are kept in Docker volumes, so they survive restarts and reboots. Every service restarts automatically.
+Documents, tickets and the model are kept in Docker volumes, so they survive restarts. Every service restarts automatically, including after a reboot.
 
 ## Troubleshooting
 
-- **The page doesn't load at all.** Check that the ingress rule in step 3 exists and the instance is running. Then run `sudo docker compose ps`; every service should be `running` or `healthy`, and `ollama-pull` should be `exited (0)`.
+- **The page doesn't load.** Check the cloud firewall: on Google, the two checkboxes; on Oracle, the ingress rule. Then run `sudo docker compose ps`. Every service should be running or healthy, and `ollama-pull` should show exited (0).
 - **There's a certificate error.** Caddy gets the certificate on the first visit and needs port 80 open for it. Run `sudo docker compose logs caddy`.
-- **"Could not reach the local model".** The model is still downloading or loading. Run `sudo docker compose logs ollama-pull`.
+- **"Could not reach the local model".** The model is still downloading or loading. Run `sudo docker compose logs ollama-pull ollama`.
+- **The address changed after a restart** (Google). Promote the IP to static (see step 2). Then update `SITE_ADDRESS` in `.env` and run `sudo docker compose up -d --force-recreate caddy`.
 
 ## Good to know
 
-- **Oracle can reclaim idle free servers.** An Always Free instance that stays almost idle for 7 days may be stopped. Upgrading the account to Pay As You Go prevents this, and Always Free resources stay free.
-- **Speed is similar to a laptop.** The model runs on CPU, so the first words of an answer take about 10–20 s.
+- **Speed:** the model runs on CPU, so the first words of an answer take about 10–20 s.
 - **The password protects the whole site,** including uploads and tickets. Share it only with the people reviewing the project.
