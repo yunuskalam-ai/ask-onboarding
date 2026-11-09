@@ -94,6 +94,12 @@ Documents, tickets and the model are kept in Docker volumes, so they survive res
 
 ## Troubleshooting
 
+- **`sudo: I'm sorry …, I'm afraid I can't do that`** (Google Cloud). `sudo` stops working a few minutes after you open SSH-in-browser: Google's agent grants your user admin rights when the browser connects and later takes them away. Close the SSH window, open it again, and **straight away** make the rights permanent:
+  ```bash
+  echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/90-$USER
+  ```
+  Then run `bash deploy/setup.sh` again. It skips whatever is already done.
+
 - **The page doesn't load.** Check the cloud firewall: on Google, the two checkboxes; on Oracle, the ingress rule. Then run `sudo docker compose ps`. Every service should be running or healthy, and `ollama-pull` should show exited (0).
 - **There's a certificate error.** Caddy gets the certificate on the first visit and needs port 80 open for it. Run `sudo docker compose logs caddy`.
 - **"Could not reach the local model".** The model is still downloading or loading. Run `sudo docker compose logs ollama-pull ollama`.
