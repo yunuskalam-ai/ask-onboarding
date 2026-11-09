@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, listDocuments, uploadDocument, type DocumentInfo } from "../api";
+import { ApiError, deleteDocument, listDocuments, uploadDocument, type DocumentInfo } from "../api";
 import { isAdmin, useAuth } from "../session";
 
 const POLL_MS = 2000;
@@ -13,6 +13,9 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [confirming, setConfirming] = useState<number | null>(null); // id awaiting "really delete?"
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Bumping this number reloads the list (after an upload, a retry, or a poll tick).
   const [version, setVersion] = useState(0);
@@ -60,6 +63,20 @@ export default function DocumentsPage() {
     refresh();
   }
 
+  async function onDelete(doc: DocumentInfo) {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteDocument(doc.id);
+      setConfirming(null);
+      refresh();
+    } catch (err) {
+      setDeleteError(`${doc.filename}: ${err instanceof ApiError ? err.message : "could not delete."}`);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <section className="page">
       <h1>Documents</h1>
@@ -69,7 +86,7 @@ export default function DocumentsPage() {
         </p>
       ) : (
         <p className="muted">
-          The company documents the assistant answers from. Only admins can add or replace documents.
+          The company documents the assistant answers from. Only admins can add, replace or delete documents.
         </p>
       )}
 
@@ -85,6 +102,12 @@ export default function DocumentsPage() {
         />
         {uploading ? "Uploading…" : "Choose files to upload"}
       </label>
+      )}
+
+      {deleteError && (
+        <div className="notice error" role="alert">
+          {deleteError}
+        </div>
       )}
 
       {uploadErrors.length > 0 && (
@@ -117,6 +140,7 @@ export default function DocumentsPage() {
               <th>Type</th>
               <th>Status</th>
               <th className="num">Chunks</th>
+              {canUpload && <th aria-label="Actions" />}
             </tr>
           </thead>
           <tbody>
@@ -129,6 +153,25 @@ export default function DocumentsPage() {
                   {d.error && <div className="row-error">{d.error}</div>}
                 </td>
                 <td className="num">{d.chunk_count}</td>
+                {canUpload && (
+                  <td className="doc-actions">
+                    {confirming === d.id ? (
+                      <span className="confirm">
+                        Delete it? Answers stop using it at once.{" "}
+                        <button className="link danger" onClick={() => onDelete(d)} disabled={deleting}>
+                          {deleting ? "Deleting…" : "Delete"}
+                        </button>{" "}
+                        <button className="link" onClick={() => setConfirming(null)} disabled={deleting}>
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button className="link danger" onClick={() => setConfirming(d.id)} aria-label={`Delete ${d.filename}`}>
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

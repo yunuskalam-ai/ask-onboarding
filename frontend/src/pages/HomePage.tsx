@@ -23,8 +23,8 @@ const STEPS = [
 
 const ROLES = [
   { role: "employee", name: "Employee", can: ["Ask questions with cited answers", "Open tickets for anything the documents miss", "Follow their own tickets"] },
-  { role: "manager", name: "Manager", can: ["Everything an employee can do", "See their team's tickets", "Move them through their statuses and reply"] },
-  { role: "admin", name: "Admin", can: ["Every ticket, from everyone", "Upload and replace company documents", "Add people, set roles, managers and departments", "See the overview and system alerts"] },
+  { role: "manager", name: "Manager", can: ["Everything an employee can do", "See their team's tickets and reply", "Browse the document library"] },
+  { role: "admin", name: "Admin", can: ["Every ticket, from everyone", "Upload, replace and delete company documents", "Add people, set roles, managers and departments", "See the overview and system alerts"] },
 ];
 
 function Preview() {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listDocuments, type DocumentInfo } from "../api";
+import { getLibrarySummary } from "../api";
+import { isAdmin, useAuth } from "../session";
 
 const POLL_MS = 3000;
 
@@ -9,19 +10,18 @@ const POLL_MS = 3000;
  * still processing (for example while the samples load on first start).
  */
 export default function LibraryNotice() {
-  const [docs, setDocs] = useState<DocumentInfo[] | null>(null);
-
-  const processing = docs?.filter((d) => d.status === "processing").length ?? 0;
+  const { user } = useAuth();
+  const [counts, setCounts] = useState<{ ready: number; processing: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     async function load() {
       try {
-        const all = await listDocuments();
+        const summary = await getLibrarySummary();
         if (cancelled) return;
-        setDocs(all);
-        if (all.some((d) => d.status === "processing")) timer = setTimeout(load, POLL_MS);
+        setCounts(summary);
+        if (summary.processing > 0) timer = setTimeout(load, POLL_MS);
       } catch {
         // The chat shows its own errors; this notice is only a hint.
       }
@@ -33,13 +33,14 @@ export default function LibraryNotice() {
     };
   }, []);
 
-  if (docs === null) return null;
-  const ready = docs.filter((d) => d.status === "ready").length;
+  if (counts === null) return null;
+  const { ready, processing } = counts;
 
   if (ready === 0 && processing === 0)
     return (
       <div className="notice">
-        No documents yet, so there is nothing to answer from. <Link to="/documents">Upload some documents</Link>.
+        No documents yet, so there is nothing to answer from.{" "}
+        {isAdmin(user) ? <Link to="/documents">Upload some documents</Link> : "Ask an admin to add some."}
       </div>
     );
   if (processing > 0)

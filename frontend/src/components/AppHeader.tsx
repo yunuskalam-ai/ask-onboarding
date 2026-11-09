@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ROLE_LABEL, initials, isAdmin, useAuth } from "../session";
+import { ROLE_LABEL, initials, isAdmin, isStaff, useAuth } from "../session";
 import { THEMES, applyTheme, savedTheme, type Theme } from "../theme";
 import NotificationBell from "./NotificationBell";
 
@@ -96,7 +96,7 @@ export default function AppHeader() {
       {user && (
         <nav>
           <NavLink to="/chat">Chat</NavLink>
-          <NavLink to="/documents">Documents</NavLink>
+          {isStaff(user) && <NavLink to="/documents">Documents</NavLink>}
           <NavLink to="/tickets">Tickets</NavLink>
           {isAdmin(user) && <NavLink to="/overview">Overview</NavLink>}
           {isAdmin(user) && <NavLink to="/people">People</NavLink>}
