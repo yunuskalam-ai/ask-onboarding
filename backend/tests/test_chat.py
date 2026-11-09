@@ -13,9 +13,10 @@ from app.api.chat import get_llm
 from app.chat.llm import LLMError, LLMRefused
 from app.chat.prompt import NO_ANSWER, build_user_message, cited_hits, is_no_answer, strip_citations
 from app.chat.service import MAX_HISTORY_TURNS, Turn, answer_events
-from app.deps import get_database_url
+from app.deps import current_user, get_database_url
 from app.main import app
 from app.retrieval.search import Hit, Retrieval, retrieve
+from tests.conftest import TEST_USER
 
 
 class FakeLLM:
@@ -212,6 +213,7 @@ def _parse_sse(body: str) -> list[tuple[str, dict]]:
 def client(indexed, test_database_url):
     fake = FakeLLM("Production deploys are not allowed on Fridays [1].")
     app.dependency_overrides[get_database_url] = lambda: test_database_url
+    app.dependency_overrides[current_user] = lambda: TEST_USER
     app.dependency_overrides[get_llm] = lambda: fake
     yield TestClient(app)
     app.dependency_overrides.clear()

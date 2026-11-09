@@ -4,7 +4,9 @@ The flow has a human in the middle:
 1. POST /api/tickets/draft - the model drafts a ticket by calling the
    create_ticket tool. Nothing is saved.
 2. The employee reviews and edits the draft in the chat.
-3. POST /api/tickets - saves the ticket the employee approved.
+3. POST /api/tickets - saves the ticket the employee approved, as theirs.
+
+Employees see only their own tickets; managers and admins see all of them.
 """
 
 import logging
@@ -16,7 +18,8 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, StringConstraints
 
 from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
-from app.deps import get_conn
+from app.auth import record
+from app.deps import SignedIn, get_conn
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +31,6 @@ Conn = Annotated[psycopg.Connection, Depends(get_conn)]
 Question = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 Summary = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)]
-UserName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 
 
 def get_ticket_drafter() -> DraftTicketFn:
@@ -46,7 +48,7 @@ class DraftOut(BaseModel):
 
 
 @router.post("/draft")
-def draft(body: DraftIn, drafter: Annotated[DraftTicketFn, Depends(get_ticket_drafter)]) -> DraftOut:
+def draft(body: DraftIn, user: SignedIn, drafter: Annotated[DraftTicketFn, Depends(get_ticket_drafter)]) -> DraftOut:
     """Ask the model to draft a ticket through its create_ticket tool. Saves nothing.
 
     Never blocks the employee on the model: if the model is down or makes no
@@ -67,7 +69,6 @@ class TicketIn(BaseModel):
     title: Title
     question: Question
     summary: Summary = ""
-    user_name: UserName
 
 
 class TicketOut(BaseModel):
@@ -81,23 +82,29 @@ class TicketOut(BaseModel):
 
 
 @router.post("", status_code=201)
-def create_ticket(body: TicketIn, conn: Conn) -> TicketOut:
+def create_ticket(body: TicketIn, user: SignedIn, conn: Conn) -> TicketOut:
+    # The owner comes from the session, never from the request body.
     row = conn.execute(
         """
-        INSERT INTO tickets (title, question, summary, user_name)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO tickets (title, question, summary, user_name, created_by)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id, title, question, summary, user_name, status, created_at
         """,
-        (body.title, body.question, body.summary, body.user_name),
+        (body.title, body.question, body.summary, user.name, user.id),
     ).fetchone()
+    record(conn, user, "ticket.create", ticket=row["id"], title=body.title)
     return TicketOut(**row)
 
 
 @router.get("")
-def list_tickets(conn: Conn) -> list[TicketOut]:
+def list_tickets(user: SignedIn, conn: Conn) -> list[TicketOut]:
+    """Employees get their own tickets; managers and admins get everyone's."""
+    everyone = user.role in ("manager", "admin")
     rows = conn.execute(
         "SELECT id, title, question, summary, user_name, status, created_at FROM tickets "
-        "ORDER BY created_at DESC, id DESC"
+        "WHERE %(everyone)s OR created_by = %(user_id)s "
+        "ORDER BY created_at DESC, id DESC",
+        {"everyone": everyone, "user_id": user.id},
     ).fetchall()
     return [TicketOut(**row) for row in rows]
 

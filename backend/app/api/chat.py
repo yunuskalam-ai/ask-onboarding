@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from app.chat.llm import StreamAnswerFn, stream_answer
 from app.chat.service import Event, Turn, answer_events
-from app.deps import get_conn, get_query_embedder
+from app.deps import SignedIn, get_conn, get_query_embedder
 from app.retrieval.search import QueryEmbedFn, retrieve
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -36,6 +36,7 @@ def get_llm() -> StreamAnswerFn:
 @router.post("/chat", response_class=StreamingResponse)
 def chat(
     body: ChatIn,
+    user: SignedIn,
     conn: Annotated[psycopg.Connection, Depends(get_conn)],
     embed: Annotated[QueryEmbedFn, Depends(get_query_embedder)],
     llm: Annotated[StreamAnswerFn, Depends(get_llm)],

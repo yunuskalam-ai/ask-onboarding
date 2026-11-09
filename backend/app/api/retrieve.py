@@ -11,7 +11,7 @@ import psycopg
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, StringConstraints
 
-from app.deps import get_conn, get_query_embedder
+from app.deps import SignedIn, get_conn, get_query_embedder
 from app.retrieval.search import QueryEmbedFn, retrieve
 
 router = APIRouter(prefix="/api", tags=["retrieval"])
@@ -45,6 +45,7 @@ class RetrieveOut(BaseModel):
 @router.post("/retrieve")
 def retrieve_chunks(
     body: RetrieveIn,
+    user: SignedIn,
     conn: Annotated[psycopg.Connection, Depends(get_conn)],
     embed: Annotated[QueryEmbedFn, Depends(get_query_embedder)],
 ) -> RetrieveOut:
