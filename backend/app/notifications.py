@@ -1,10 +1,12 @@
 """Notifications: the one place that decides who hears about what.
 
-Who receives what:
-  ticket opened         every manager and admin (not the person who opened it)
-  ticket status / note  the ticket's owner, plus every manager and admin
-                        (never the person who made the change)
+Who receives what (active people only, never the person who acted):
+  ticket opened         the managers above the ticket's owner (their manager,
+                        that manager's manager, ...) and every admin
+  ticket status / note  the ticket's owner, the managers above them, and every admin
   system alert          every admin
+
+So a manager hears about their own team's tickets only; admins hear about all.
 
 Recipients are decided when the event happens: someone promoted later doesn't
 receive older notifications. Each recipient has their own read/unread state.
@@ -30,6 +32,7 @@ from typing import Literal
 
 from app.auth import User
 from app.db import Connection, connect, one
+from app.people import CHAIN_SQL
 
 log = logging.getLogger(__name__)
 
@@ -42,19 +45,19 @@ STATUS_WORDS = {"open": "Open", "in_progress": "In progress", "resolved": "Resol
 
 # Who receives a notification: a closed set of named audiences, each with
 # fixed SQL that returns user ids. Callers pick a name; they can't pass SQL.
-Audience = Literal["staff_except_actor", "owner_and_staff_except_actor", "admins"]
-_STAFF = "SELECT id FROM users WHERE role IN ('manager', 'admin')"
+Audience = Literal["chain_and_admins_except_actor", "owner_chain_and_admins_except_actor", "admins"]
+# The managers above %(person)s, plus every admin. UNION removes duplicates (an
+# admin can also be in the chain). people.CHAIN_SQL walks up the reporting lines.
+_CHAIN_AND_ADMINS = f"SELECT id FROM ({CHAIN_SQL}) AS chain UNION SELECT id FROM users WHERE role = 'admin'"  # noqa: S608  # constant SQL from app.people
 _AUDIENCES: dict[str, str] = {
-    "staff_except_actor": f"{_STAFF} AND id <> %(actor)s",
-    # The owner (if the ticket has one) and all staff, except whoever made the change.
-    # UNION also removes the duplicate when the owner is themselves a manager or admin.
-    "owner_and_staff_except_actor": (
-        "SELECT id FROM ("  # noqa: S608  # a constant from this module (_STAFF), no user input
-        "SELECT created_by AS id FROM tickets WHERE id = %(ticket)s AND created_by IS NOT NULL "
-        f"UNION {_STAFF}"
-        ") AS everyone WHERE id <> %(actor)s"
+    "chain_and_admins_except_actor": (
+        f"SELECT id FROM users WHERE active AND id <> %(actor)s AND id IN ({_CHAIN_AND_ADMINS})"  # noqa: S608  # constants from this module
     ),
-    "admins": "SELECT id FROM users WHERE role = 'admin'",
+    "owner_chain_and_admins_except_actor": (
+        "SELECT id FROM users WHERE active AND id <> %(actor)s AND id IN ("  # noqa: S608  # constants from this module
+        f"SELECT %(person)s UNION {_CHAIN_AND_ADMINS})"
+    ),
+    "admins": "SELECT id FROM users WHERE role = 'admin' AND active",
 }
 
 
@@ -104,12 +107,16 @@ def ticket_opened(conn: Connection, ticket_id: int, title: str, question: str, a
         body=f"{actor.name} asked: “{_shorten(question)}”",
         link=f"/tickets#ticket-{ticket_id}",
         ticket_id=ticket_id,
-        audience="staff_except_actor",
-        params={"actor": actor.id},
+        # The author is the owner: tell the managers above them, and the admins.
+        audience="chain_and_admins_except_actor",
+        params={"actor": actor.id, "person": actor.id},
     )
 
 
-def ticket_updated(conn: Connection, ticket_id: int, actor: User, old_status: str, new_status: str, note: str) -> int:
+def ticket_updated(
+    conn: Connection, ticket_id: int, owner_id: int | None, actor: User, old_status: str, new_status: str, note: str
+) -> int:
+    """owner_id is None for tickets from before sign-in existed: then only admins hear."""
     if old_status != new_status:
         title = f"Ticket #{ticket_id} is now {STATUS_WORDS[new_status]}"
         body = f"{actor.name}: {_shorten(note)}" if note else f"{actor.name} moved it from {STATUS_WORDS[old_status]}."
@@ -123,8 +130,8 @@ def ticket_updated(conn: Connection, ticket_id: int, actor: User, old_status: st
         body=body,
         link=f"/tickets#ticket-{ticket_id}",
         ticket_id=ticket_id,
-        audience="owner_and_staff_except_actor",
-        params={"ticket": ticket_id, "actor": actor.id},
+        audience="owner_chain_and_admins_except_actor",
+        params={"actor": actor.id, "person": owner_id},
     )
 
 
