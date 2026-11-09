@@ -12,6 +12,15 @@ cd "$(dirname "$0")/.."
 
 CADDY_IMAGE=caddy:2.10.2-alpine
 
+# Every step needs sudo. Stop early with a clear message instead of failing halfway.
+if ! sudo true; then
+    echo "This script needs sudo, and $USER can't use it right now." >&2
+    echo "On Google Cloud: close the SSH window, open it again, and first run" >&2
+    echo "  echo \"\$USER ALL=(ALL) NOPASSWD:ALL\" | sudo tee /etc/sudoers.d/90-\$USER" >&2
+    echo "(see Troubleshooting in deploy/README.md)." >&2
+    exit 1
+fi
+
 # Minimal cloud images (such as Google's Ubuntu 26.04) leave out tools this
 # script uses. Docker also needs iptables: without it the Docker service is
 # installed but can't start ("failed to create NAT chain DOCKER").
