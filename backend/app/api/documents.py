@@ -1,4 +1,10 @@
-"""Document endpoints: upload, list with status, and read back for citations."""
+"""Document endpoints.
+
+list, with status          managers and admins (the Documents tab)
+counts (summary)           everyone signed in (the chat's "still loading" hint)
+text and original file     everyone signed in: answers cite them
+upload, delete             admins
+"""
 
 from datetime import datetime
 from typing import Annotated, Literal
@@ -9,8 +15,8 @@ from pydantic import BaseModel
 
 from app.auth import record
 from app.config import settings
-from app.db import Connection, connect
-from app.deps import Admin, SignedIn, get_conn, get_database_url, get_embedder
+from app.db import Connection, connect, one
+from app.deps import Admin, SignedIn, Staff, get_conn, get_database_url, get_embedder
 from app.ingest.parsers import UnsupportedFileType
 from app.ingest.service import EmbedFn, process_document, save_upload
 from app.notifications import alert_admins
@@ -65,9 +71,42 @@ def upload_document(  # plain def: FastAPI runs it in a thread, so blocking DB c
 
 
 @router.get("")
-def list_documents(user: SignedIn, conn: Conn) -> list[DocumentOut]:
+def list_documents(user: Staff, conn: Conn) -> list[DocumentOut]:
+    """Managers and admins: the library with each document's status."""
     rows = conn.execute(_SELECT + " ORDER BY d.filename").fetchall()
     return [DocumentOut(**row) for row in rows]
+
+
+class SummaryOut(BaseModel):
+    ready: int
+    processing: int
+    failed: int
+
+
+# Declared before /{document_id}, so "summary" isn't taken for an id.
+@router.get("/summary")
+def library_summary(user: SignedIn, conn: Conn) -> SummaryOut:
+    """Counts only, for everyone: the chat says when the library is empty or still loading."""
+    return SummaryOut(
+        **one(
+            conn.execute(
+                "SELECT count(*) FILTER (WHERE status = 'ready') AS ready, "
+                "count(*) FILTER (WHERE status = 'processing') AS processing, "
+                "count(*) FILTER (WHERE status = 'failed') AS failed FROM documents"
+            )
+        )
+    )
+
+
+@router.delete("/{document_id}", status_code=204)
+def delete_document(document_id: int, admin: Admin, conn: Conn) -> Response:
+    """Admins only. Its chunks go with it (cascade), so answers stop using it at once.
+    A background job still processing it finds the row gone and stores nothing."""
+    row = conn.execute("DELETE FROM documents WHERE id = %s RETURNING filename", (document_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "Document not found.")
+    record(conn, admin, "document.delete", filename=row["filename"])
+    return Response(status_code=204)
 
 
 class PageOut(BaseModel):
