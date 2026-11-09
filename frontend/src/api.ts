@@ -43,6 +43,28 @@ export const NO_ANSWER = "I couldn't find this in the company documents.";
 
 export class ApiError extends Error {}
 
+export type Role = "employee" | "manager" | "admin";
+
+export type User = { id: number; email: string; name: string; role: Role };
+
+// Called when the server says the session is gone (401), so the app can
+// return to the sign-in page. The AuthProvider sets it.
+let onSignedOut: () => void = () => {};
+export function setSignedOutHandler(handler: () => void) {
+  onSignedOut = handler;
+}
+
+/** fetch, plus: a 401 means signed out, and other errors become ApiError with the server's message. */
+async function call(url: string, init?: RequestInit): Promise<Response> {
+  const response = await fetch(url, init);
+  if (response.status === 401) {
+    onSignedOut();
+    throw new ApiError("Please sign in.");
+  }
+  if (!response.ok) throw new ApiError(await errorMessage(response));
+  return response;
+}
+
 async function errorMessage(response: Response): Promise<string> {
   try {
     const body = await response.json();
@@ -54,10 +76,38 @@ async function errorMessage(response: Response): Promise<string> {
 }
 
 async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  return (await call(url)).json();
+}
+
+function sendJson<T>(method: "POST" | "PATCH", url: string, body: unknown): Promise<T> {
+  return call(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(
+    (r) => (r.status === 204 ? (undefined as T) : r.json()),
+  );
+}
+
+// --- Signing in --------------------------------------------------------------
+
+/** The signed-in user, or null. */
+export async function getMe(): Promise<User | null> {
+  const response = await fetch("/api/auth/me");
+  if (response.status === 401) return null;
   if (!response.ok) throw new ApiError(await errorMessage(response));
   return response.json();
 }
+
+export const listAccounts = () => getJson<User[]>("/api/auth/accounts");
+
+export const signIn = (email: string) => sendJson<User>("POST", "/api/auth/sign-in", { email });
+
+export const signOut = () => sendJson<void>("POST", "/api/auth/sign-out", {});
+
+// --- People (admins) ------------------------------------------------------------
+
+export const listUsers = () => getJson<User[]>("/api/users");
+
+export const changeRole = (id: number, role: Role) => sendJson<User>("PATCH", `/api/users/${id}`, { role });
+
+// --- Documents -------------------------------------------------------------------
 
 export const listDocuments = () => getJson<DocumentInfo[]>("/api/documents");
 
@@ -69,8 +119,7 @@ export const documentFileUrl = (id: number, page?: number | null) =>
 export async function uploadDocument(file: File): Promise<void> {
   const form = new FormData();
   form.append("file", file);
-  const response = await fetch("/api/documents", { method: "POST", body: form });
-  if (!response.ok) throw new ApiError(await errorMessage(response));
+  await call("/api/documents", { method: "POST", body: form });
 }
 
 export type ChatHandlers = {
@@ -94,6 +143,11 @@ export async function streamChat(
       body: JSON.stringify({ question, history }),
       signal,
     });
+    if (response.status === 401) {
+      onSignedOut();
+      handlers.onError("Your session ended. Please sign in again.");
+      return;
+    }
     if (!response.ok || !response.body) {
       handlers.onError(await errorMessage(response));
       return;
@@ -137,20 +191,11 @@ export type Ticket = {
   created_at: string;
 };
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new ApiError(await errorMessage(response));
-  return response.json();
-}
-
 /** The model drafts a ticket through its create_ticket tool. Nothing is saved yet. */
-export const draftTicket = (question: string) => postJson<TicketDraft>("/api/tickets/draft", { question });
+export const draftTicket = (question: string) => sendJson<TicketDraft>("POST", "/api/tickets/draft", { question });
 
-export const createTicket = (ticket: { title: string; question: string; summary: string; user_name: string }) =>
-  postJson<Ticket>("/api/tickets", ticket);
+/** Saved as the signed-in user's ticket. */
+export const createTicket = (ticket: { title: string; question: string; summary: string }) =>
+  sendJson<Ticket>("POST", "/api/tickets", ticket);
 
 export const listTickets = () => getJson<Ticket[]>("/api/tickets");

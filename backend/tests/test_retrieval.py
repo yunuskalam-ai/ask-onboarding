@@ -7,9 +7,10 @@ as they found it.
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_database_url
+from app.deps import current_user, get_database_url
 from app.main import app
 from app.retrieval.search import retrieve, search
+from tests.conftest import TEST_USER
 
 
 @pytest.mark.parametrize(
@@ -76,6 +77,7 @@ def test_documents_that_are_not_ready_are_never_returned(indexed):
 @pytest.fixture
 def client(indexed, test_database_url):
     app.dependency_overrides[get_database_url] = lambda: test_database_url
+    app.dependency_overrides[current_user] = lambda: TEST_USER
     yield TestClient(app)
     app.dependency_overrides.clear()
 

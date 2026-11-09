@@ -12,6 +12,8 @@ services:
     ports: !reset []
   api:
     ports: !reset []
+    environment:
+      COOKIE_SECURE: "true" # the site is HTTPS-only, so the session cookie never travels in clear text
   web:
     ports: !reset []
 

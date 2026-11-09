@@ -1,27 +1,26 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
+import { RequireRole } from "./auth";
+import AppHeader from "./components/AppHeader";
 import ChatPage from "./pages/ChatPage";
 import DocumentsPage from "./pages/DocumentsPage";
+import HomePage from "./pages/HomePage";
+import PeoplePage from "./pages/PeoplePage";
+import SignInPage from "./pages/SignInPage";
 import TicketsPage from "./pages/TicketsPage";
 
 export default function App() {
   return (
     <div className="app">
-      <header className="topbar">
-        <span className="brand">Ask Onboarding</span>
-        <nav>
-          <NavLink to="/" end>
-            Chat
-          </NavLink>
-          <NavLink to="/documents">Documents</NavLink>
-          <NavLink to="/tickets">Tickets</NavLink>
-        </nav>
-      </header>
+      <AppHeader />
       <main>
         <Routes>
-          <Route path="/" element={<ChatPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/tickets" element={<TicketsPage />} />
-          <Route path="*" element={<p className="notice">Page not found.</p>} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/sign-in" element={<SignInPage />} />
+          <Route path="/chat" element={<RequireRole><ChatPage /></RequireRole>} />
+          <Route path="/documents" element={<RequireRole><DocumentsPage /></RequireRole>} />
+          <Route path="/tickets" element={<RequireRole><TicketsPage /></RequireRole>} />
+          <Route path="/people" element={<RequireRole roles={["admin"]}><PeoplePage /></RequireRole>} />
+          <Route path="*" element={<p className="page notice">Page not found.</p>} />
         </Routes>
       </main>
     </div>

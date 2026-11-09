@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, listDocuments, uploadDocument, type DocumentInfo } from "../api";
+import { isAdmin, useAuth } from "../session";
 
 const POLL_MS = 2000;
 const ACCEPT = ".pdf,.md,.markdown,.txt";
 
 export default function DocumentsPage() {
+  const { user } = useAuth();
+  const canUpload = isAdmin(user);
   const [docs, setDocs] = useState<DocumentInfo[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -60,10 +63,17 @@ export default function DocumentsPage() {
   return (
     <section className="page">
       <h1>Documents</h1>
-      <p className="muted">
-        Upload PDF, Markdown or text files. Uploading a file with the same name replaces the old version.
-      </p>
+      {canUpload ? (
+        <p className="muted">
+          Upload PDF, Markdown or text files. Uploading a file with the same name replaces the old version.
+        </p>
+      ) : (
+        <p className="muted">
+          The company documents the assistant answers from. Only admins can add or replace documents.
+        </p>
+      )}
 
+      {canUpload && (
       <label className={`upload ${uploading ? "disabled" : ""}`}>
         <input
           ref={fileInput}
@@ -75,6 +85,7 @@ export default function DocumentsPage() {
         />
         {uploading ? "Uploading…" : "Choose files to upload"}
       </label>
+      )}
 
       {uploadErrors.length > 0 && (
         <div className="notice error" role="alert">
@@ -92,7 +103,11 @@ export default function DocumentsPage() {
 
       {docs === null && !loadError && <p className="muted">Loading documents…</p>}
 
-      {docs?.length === 0 && <p className="notice">No documents yet. Upload one to get started.</p>}
+      {docs?.length === 0 && (
+        <p className="notice">
+          {canUpload ? "No documents yet. Upload one to get started." : "No documents yet. An admin needs to add some."}
+        </p>
+      )}
 
       {docs && docs.length > 0 && (
         <table className="docs">

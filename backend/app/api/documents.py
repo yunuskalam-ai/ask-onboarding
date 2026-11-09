@@ -10,7 +10,8 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.db import connect
-from app.deps import get_conn, get_database_url, get_embedder
+from app.auth import record
+from app.deps import Admin, SignedIn, get_conn, get_database_url, get_embedder
 from app.ingest.parsers import UnsupportedFileType
 from app.ingest.service import EmbedFn, process_document, save_upload
 
@@ -37,12 +38,13 @@ class UploadOut(BaseModel):
 @router.post("", status_code=202)
 def upload_document(  # plain def: FastAPI runs it in a thread, so blocking DB calls are fine
     file: UploadFile,
+    admin: Admin,
     background: BackgroundTasks,
     conn: Conn,
     database_url: Annotated[str, Depends(get_database_url)],
     embed: Annotated[EmbedFn, Depends(get_embedder)],
 ) -> UploadOut:
-    """Store the file and process it in the background. Poll GET /api/documents for status."""
+    """Admins only. Store the file and process it in the background. Poll GET /api/documents for status."""
     if not file.filename:
         raise HTTPException(400, "The upload has no filename.")
     limit = settings.max_upload_mb * 1024 * 1024
@@ -55,6 +57,7 @@ def upload_document(  # plain def: FastAPI runs it in a thread, so blocking DB c
     except UnsupportedFileType as exc:
         raise HTTPException(415, str(exc)) from exc
 
+    record(conn, admin, "document.upload", filename=file.filename, unchanged=upload.unchanged)
     if not upload.unchanged:
         # Runs after the response is sent, with its own connection.
         background.add_task(_process_in_background, database_url, upload.document_id, embed)
@@ -62,7 +65,7 @@ def upload_document(  # plain def: FastAPI runs it in a thread, so blocking DB c
 
 
 @router.get("")
-def list_documents(conn: Conn) -> list[DocumentOut]:
+def list_documents(user: SignedIn, conn: Conn) -> list[DocumentOut]:
     rows = conn.execute(_SELECT + " ORDER BY d.filename").fetchall()
     return [DocumentOut(**row) for row in rows]
 
@@ -80,7 +83,7 @@ class DocumentTextOut(BaseModel):
 
 
 @router.get("/{document_id}")
-def get_document_text(document_id: int, conn: Conn) -> DocumentTextOut:
+def get_document_text(document_id: int, user: SignedIn, conn: Conn) -> DocumentTextOut:
     """The extracted text of a ready document, for showing a cited passage."""
     row = conn.execute(
         "SELECT id, filename, file_type, pages FROM documents WHERE id = %s AND status = 'ready'",
@@ -95,7 +98,7 @@ _MEDIA_TYPES = {"pdf": "application/pdf", "md": "text/markdown; charset=utf-8", 
 
 
 @router.get("/{document_id}/file")
-def get_document_file(document_id: int, conn: Conn) -> Response:
+def get_document_file(document_id: int, user: SignedIn, conn: Conn) -> Response:
     """The original uploaded file. PDFs open in the browser's viewer (add #page=N)."""
     row = conn.execute(
         "SELECT filename, file_type, original FROM documents WHERE id = %s", (document_id,)

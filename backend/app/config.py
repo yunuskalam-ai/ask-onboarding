@@ -32,6 +32,8 @@ class Settings:
     anthropic_api_key: str | None
     answer_model: str  # Claude model, used when llm_provider is "anthropic"
     answer_effort: str  # low | medium | high | xhigh | max
+    cookie_secure: bool  # send the session cookie over HTTPS only (true when deployed)
+    seed_demo_users: bool  # create the demo accounts on first start
 
 
 def load_settings() -> Settings:
@@ -55,6 +57,8 @@ def load_settings() -> Settings:
         anthropic_api_key=env("ANTHROPIC_API_KEY") or None,
         answer_model=env("ANSWER_MODEL", "claude-sonnet-5-5"),
         answer_effort=env("ANSWER_EFFORT", "low"),
+        cookie_secure=env("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
+        seed_demo_users=env("SEED_DEMO_USERS", "true").lower() in ("1", "true", "yes"),
     )
 
 

@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from app.api import documents
 from app.deps import get_database_url, get_embedder
 from app.main import app
-from tests.conftest import fake_embed
+from tests.conftest import fake_embed, sign_in_as
 
 
 @pytest.fixture
@@ -15,7 +15,9 @@ def client(db, test_database_url):
     # The db fixture has already created the schema in the test database.
     app.dependency_overrides[get_database_url] = lambda: test_database_url
     app.dependency_overrides[get_embedder] = lambda: fake_embed
-    yield TestClient(app)
+    client = TestClient(app)
+    sign_in_as(client, db, "admin")  # uploading needs the admin role
+    yield client
     app.dependency_overrides.clear()
 
 

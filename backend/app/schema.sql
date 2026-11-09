@@ -44,3 +44,35 @@ CREATE TABLE IF NOT EXISTS tickets (
     status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- People who can sign in, and what they may do. Demo accounts have no
+-- password for now: the sign-in page lists them (see app/auth.py).
+CREATE TABLE IF NOT EXISTS users (
+    id          BIGSERIAL PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,           -- stored in lowercase
+    name        TEXT NOT NULL,
+    role        TEXT NOT NULL CHECK (role IN ('employee', 'manager', 'admin')),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Signed-in browsers. The cookie holds a random token; only its SHA-256 is
+-- stored, so reading this table doesn't let anyone take over a session.
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash  TEXT PRIMARY KEY,
+    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at  TIMESTAMPTZ NOT NULL
+);
+
+-- Who did what, for the admin overview: sign-ins, uploads, role changes, tickets.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          BIGSERIAL PRIMARY KEY,
+    at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id     BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    action      TEXT NOT NULL,                  -- e.g. 'sign_in', 'document.upload', 'user.role'
+    details     JSONB NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS audit_log_at_idx ON audit_log (at DESC);
+
+-- Tickets belong to the person who opened them (older tickets have none).
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id) ON DELETE SET NULL;

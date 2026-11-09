@@ -5,12 +5,15 @@ from app.api.tickets import get_ticket_drafter
 from app.chat.llm import LLMError, TicketDraft
 from app.deps import get_database_url
 from app.main import app
+from tests.conftest import sign_in_as
 
 
 @pytest.fixture
 def client(db, test_database_url):
     app.dependency_overrides[get_database_url] = lambda: test_database_url
-    yield TestClient(app)
+    client = TestClient(app)
+    sign_in_as(client, db, "employee", name="Sam")
+    yield client
     app.dependency_overrides.clear()
 
 
@@ -22,7 +25,6 @@ TICKET = {
     "title": "Stock options for employees",
     "question": "Do employees get stock options?",
     "summary": "Employee asks whether the company offers stock options.",
-    "user_name": "Sam",
 }
 
 
@@ -91,7 +93,7 @@ def test_summary_is_optional(client):
 
 @pytest.mark.parametrize(
     "change",
-    [{"title": "  "}, {"user_name": ""}, {"question": ""}, {"title": "x" * 121}, {"summary": "x" * 1001}],
+    [{"title": "  "}, {"question": ""}, {"title": "x" * 121}, {"summary": "x" * 1001}],
 )
 def test_invalid_tickets_are_rejected(client, change):
     assert client.post("/api/tickets", json={**TICKET, **change}).status_code == 422

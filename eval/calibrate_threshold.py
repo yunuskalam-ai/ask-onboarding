@@ -17,8 +17,12 @@ Standard library only, so it runs without installing anything.
 """
 
 import argparse
+import http.cookiejar
 import json
 import urllib.request
+
+# Keeps the session cookie between requests, like a browser.
+OPENER = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
 ANSWERABLE = [
     ("How many days of annual leave do I get?", "handbook-pto-and-leave-policy.md"),
@@ -52,20 +56,28 @@ OFF_TOPIC = [
 ]
 
 
-def retrieve(api: str, question: str) -> dict:
-    request = urllib.request.Request(
-        f"{api}/api/retrieve",
-        data=json.dumps({"question": question, "top_k": 5}).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(request) as response:
+def _post(url: str, body: dict) -> dict:
+    request = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with OPENER.open(request) as response:
         return json.load(response)
+
+
+def sign_in(api: str) -> None:
+    """The API needs a session. Any account can search; use the first one listed."""
+    with OPENER.open(f"{api}/api/auth/accounts") as response:
+        email = json.load(response)[0]["email"]
+    _post(f"{api}/api/auth/sign-in", {"email": email})
+
+
+def retrieve(api: str, question: str) -> dict:
+    return _post(f"{api}/api/retrieve", {"question": question, "top_k": 5})
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--api", default="http://localhost:8000")
     api = parser.parse_args().api
+    sign_in(api)
 
     groups = {"answerable": [], "near-topic": [], "off-topic": []}
     hit_at_1 = hit_at_5 = 0
