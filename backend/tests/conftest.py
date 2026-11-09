@@ -5,6 +5,7 @@ import numpy as np
 import psycopg
 import pytest
 
+from app.auth import User
 from app.config import settings
 from app.db import connect, ensure_database, sibling_database_url
 
@@ -33,7 +34,7 @@ def test_database_url() -> str:
 def db(test_database_url):
     """A connection to an empty test database."""
     with connect(test_database_url) as conn:
-        conn.execute("TRUNCATE documents, tickets RESTART IDENTITY CASCADE")
+        conn.execute("TRUNCATE documents, tickets, users, audit_log RESTART IDENTITY CASCADE")
         yield conn
 
 
@@ -57,6 +58,31 @@ def other_db(test_database_url):
     """A second connection, to simulate a request running at the same time."""
     with connect(test_database_url) as conn:
         yield conn
+
+
+# --- Users ----------------------------------------------------------------
+
+def add_user(conn, role: str = "employee", name: str | None = None, email: str | None = None) -> User:
+    name = name or f"Test {role.title()}"
+    email = email or f"{name.lower().replace(' ', '.')}@test.example"
+    row = conn.execute(
+        "INSERT INTO users (email, name, role) VALUES (%s, %s, %s) RETURNING id, email, name, role",
+        (email, name, role),
+    ).fetchone()
+    return User(**row)
+
+
+def sign_in_as(client, conn, role: str = "employee", name: str | None = None) -> User:
+    """Create a user and sign the test client in as them, through the real endpoint."""
+    user = add_user(conn, role, name)
+    response = client.post("/api/auth/sign-in", json={"email": user.email})
+    assert response.status_code == 200, response.text
+    return user
+
+
+# A stand-in user for tests that need someone signed in but write nothing that
+# refers to them (chat, retrieval). Override app.deps.current_user with it.
+TEST_USER = User(id=0, email="tester@test.example", name="Tester", role="employee")
 
 
 # --- Embeddings -----------------------------------------------------------

@@ -5,7 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import chat, documents, retrieve, tickets
+from app.api import auth, chat, documents, retrieve, tickets, users
+from app.auth import seed_demo_users
 from app.config import settings
 from app.db import connect, init_schema
 from app.startup import start_background_tasks
@@ -17,6 +18,8 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     with connect(settings.database_url) as conn:
         init_schema(conn)
+        if settings.seed_demo_users:
+            seed_demo_users(conn)
     # Seeding and model warm-up run in the background, so the API is
     # healthy (and the web app usable) while they finish.
     start_background_tasks()
@@ -24,6 +27,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Ask Onboarding API", lifespan=lifespan)
+app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(documents.router)
 app.include_router(retrieve.router)
 app.include_router(chat.router)
