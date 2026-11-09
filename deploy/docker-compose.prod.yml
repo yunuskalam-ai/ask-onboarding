@@ -1,5 +1,5 @@
 # Production overrides for a public server, on top of docker-compose.yml.
-# deploy/oracle/setup.sh puts COMPOSE_FILE in .env so a plain
+# deploy/setup.sh puts COMPOSE_FILE in .env so a plain
 # `docker compose up -d` uses both files.
 #
 # Differences from the local stack:
@@ -22,11 +22,11 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env (deploy/oracle/setup.sh does this)}
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env (deploy/setup.sh does this)}
       DEMO_USER: ${DEMO_USER:-demo}
-      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set DEMO_PASSWORD_HASH in .env (deploy/oracle/setup.sh does this)}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set DEMO_PASSWORD_HASH in .env (deploy/setup.sh does this)}
     volumes:
-      - ./deploy/oracle/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data # the certificate, so a restart doesn't request a new one
     depends_on:
       - web
