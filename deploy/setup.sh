@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# One-time setup of Ask Onboarding on a fresh Ubuntu server (written for an
-# Oracle Cloud Always Free ARM instance). Run it from the repo folder:
+# One-time setup of Ask Onboarding on a fresh Ubuntu 24.04 server (Google
+# Cloud, Oracle Cloud, or any other). Run it from the repo folder:
 #
-#   bash deploy/oracle/setup.sh
+#   bash deploy/setup.sh
 #
 # It opens ports 80/443, installs Docker, asks for a username and password
 # for the site, writes .env, and starts the stack. Safe to run again: it
-# keeps an existing .env. See deploy/oracle/README.md for the full guide.
+# keeps an existing .env. See deploy/README.md for the full guide.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/.."
 
 CADDY_IMAGE=caddy:2.10.2-alpine
 
@@ -43,8 +43,8 @@ else
     hash=$(sudo docker run --rm "$CADDY_IMAGE" caddy hash-password --plaintext "$site_password")
     umask 077 # .env is readable only by you
     cat > .env <<EOF
-# Written by deploy/oracle/setup.sh. Use both compose files on every command:
-COMPOSE_FILE=docker-compose.yml:deploy/oracle/docker-compose.prod.yml
+# Written by deploy/setup.sh. Use both compose files on every command:
+COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.prod.yml
 
 # Public address. sslip.io turns the IP into a host name, so Caddy can get an
 # HTTPS certificate without you buying a domain.
