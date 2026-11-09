@@ -7,7 +7,7 @@ This guide gets a new engineer from a fresh laptop to a running local copy of Ro
 Make sure you have:
 
 - A company MacBook Pro with Okta and Okta Verify set up (see the Laptop and Accounts guide).
-- A GitHub account added to the **larkspur-labs** organisation. IT adds you on day one; check that you can see the `routewise` repository.
+- A GitHub account added to the **yk-labs** organisation. IT adds you on day one; check that you can see the `routewise` repository.
 - A **Docker Desktop** licence. Request it in the Self Service app; do not install the free version.
 
 ## 2. Install the tools
@@ -27,7 +27,7 @@ Routewise is a monorepo.
 
 ```bash
 gh auth login
-gh repo clone larkspur-labs/routewise
+gh repo clone yk-labs/routewise
 cd routewise
 mise install
 make bootstrap
@@ -43,7 +43,7 @@ make seed    # loads demo customers, depots and routes
 make web     # starts the web app at http://localhost:5173
 ```
 
-The API runs at http://localhost:8000. Sign in to the local web app with `demo@larkspur.example` and password `demo`.
+The API runs at http://localhost:8000. Sign in to the local web app with `demo@yklabs.example` and password `demo`.
 
 Run the tests with `make test`. The full suite takes about 6 minutes; `make test-fast` skips the slow integration tests.
 

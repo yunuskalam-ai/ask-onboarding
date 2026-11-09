@@ -1,6 +1,6 @@
 # Information Security Policy
 
-Owner: Security team (security@larkspur.example). This policy applies to all employees and contractors.
+Owner: Security team (security@yklabs.example). This policy applies to all employees and contractors.
 
 ## Data classification
 
@@ -30,14 +30,14 @@ Customer data is always **Restricted**. Never copy it to a personal device, a pe
 
 ## Phishing
 
-If an email looks suspicious, do not click links or open attachments. Use the **"Report Phish" button** in Gmail, or forward the email to security@larkspur.example. The Security team sends practice phishing emails every month.
+If an email looks suspicious, do not click links or open attachments. Use the **"Report Phish" button** in Gmail, or forward the email to security@yklabs.example. The Security team sends practice phishing emails every month.
 
 ## Reporting a security incident
 
 Report any suspected security incident **within 1 hour** of noticing it. Examples: a lost or stolen laptop, a password you typed into a fake site, or customer data sent to the wrong person.
 
 - Post in **#security-incidents** on Slack, or
-- Email security@larkspur.example, or
+- Email security@yklabs.example, or
 - Out of hours, call the security on-call number pinned in #security-incidents.
 
 You will not be punished for reporting a mistake quickly. Hiding a mistake is a disciplinary matter.

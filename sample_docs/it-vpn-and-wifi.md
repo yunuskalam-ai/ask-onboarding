@@ -2,7 +2,7 @@
 
 ## When you need the VPN
 
-Use the **Larkspur VPN** to reach internal systems. You need it for:
+Use the **YK Labs VPN** to reach internal systems. You need it for:
 
 - Staging (staging.routewise.example) and other internal tools
 - The admin panels of production systems (on-call engineers only)
@@ -12,8 +12,8 @@ You do **not** need the VPN for Google Workspace, Slack, Notion, Jira or other c
 
 ## Setting up the VPN
 
-1. Open the **Self Service** app and install **Larkspur VPN**.
-2. Open Larkspur VPN and click **Sign in with Okta**.
+1. Open the **Self Service** app and install **YK Labs VPN**.
+2. Open YK Labs VPN and click **Sign in with Okta**.
 3. Approve the push notification in Okta Verify.
 4. Choose the **London** gateway. Use **Manchester** only if London is down.
 
@@ -32,12 +32,12 @@ The VPN disconnects after **12 hours**. Sign in again to reconnect.
 
 | Network | Who it is for | How to join |
 | --- | --- | --- |
-| Larkspur-Staff | Employees, company laptops | Sign in with your Okta username and password |
-| Larkspur-Guest | Visitors and personal phones | Password shown on the reception screen |
+| YKLabs-Staff | Employees, company laptops | Sign in with your Okta username and password |
+| YKLabs-Guest | Visitors and personal phones | Password shown on the reception screen |
 
-- The **Larkspur-Guest** password changes every **Monday** morning.
-- Do not connect company laptops to Larkspur-Guest.
-- Larkspur-Guest has no access to internal systems, even with the VPN.
+- The **YKLabs-Guest** password changes every **Monday** morning.
+- Do not connect company laptops to YKLabs-Guest.
+- YKLabs-Guest has no access to internal systems, even with the VPN.
 
 ## Working from cafés and public Wi-Fi
 
