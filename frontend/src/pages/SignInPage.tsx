@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError, listAccounts, type User } from "../api";
+import { safeNext } from "../redirect";
 import { ROLE_LABEL, initials, useAuth } from "../session";
-
-/** Only follow links inside this app after signing in, never to another site. */
-function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/chat";
-}
 
 export default function SignInPage() {
   const { user, signIn } = useAuth();
