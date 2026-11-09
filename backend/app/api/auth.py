@@ -37,11 +37,18 @@ def accounts(conn: Conn) -> list[UserOut]:
 
 
 @router.post("/sign-in")
-def sign_in(body: SignInIn, response: Response, conn: Conn) -> UserOut:
+def sign_in(
+    body: SignInIn,
+    response: Response,
+    conn: Conn,
+    ask_session: Annotated[str | None, Cookie()] = None,
+) -> UserOut:
     user = auth.get_user_by_email(conn, body.email)
     if user is None:
         raise HTTPException(404, "There is no account with that email.")
-    token = auth.start_session(conn, user)
+    if ask_session:
+        auth.end_session(conn, ask_session)  # switching accounts: the old session ends, not lingers
+    token = auth.start_session(conn, user)  # always a new token, never the one the browser sent
     response.set_cookie(
         auth.SESSION_COOKIE,
         token,
