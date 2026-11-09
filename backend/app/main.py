@@ -9,6 +9,7 @@ from app.api import auth, chat, documents, retrieve, tickets, users
 from app.auth import seed_demo_users
 from app.config import settings
 from app.db import connect, init_schema
+from app.security import OriginCheckMiddleware
 from app.startup import start_background_tasks
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Ask Onboarding API", lifespan=lifespan)
+app.add_middleware(OriginCheckMiddleware)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(documents.router)
