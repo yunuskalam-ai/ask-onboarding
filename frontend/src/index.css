@@ -423,3 +423,29 @@ table.compact th, table.compact td { padding: 0.45rem 0.6rem; font-size: 0.9rem;
 
 /* A ticket opened from a notification is briefly highlighted. */
 ul.tickets li.linked { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* --- Project docs (admins) --- */
+.docs-layout { flex: 1; display: grid; grid-template-columns: 230px minmax(0, 1fr); width: 100%; }
+.docs-nav { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem 1rem; border-right: 1px solid var(--border); min-height: calc(100vh - 53px); }
+.docs-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.docs-nav a, .docs-nav ul span { display: block; padding: 0.35rem 0.6rem; border-radius: 6px; text-decoration: none; color: var(--text); }
+.docs-nav a.active { background: var(--user-bg); font-weight: 600; }
+.docs-nav .small { color: var(--accent); }
+.docs-body { padding: 1.5rem 2.5rem 4rem; max-width: 1100px; line-height: 1.65; overflow-wrap: anywhere; }
+.docs-body h1 { font-size: 1.9rem; margin: 0 0 1rem; }
+.docs-body h2 { font-size: 1.35rem; margin: 2.2rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+.docs-body h3 { font-size: 1.1rem; margin: 1.6rem 0 0.5rem; }
+.docs-body :is(h1, h2, h3, h4) { scroll-margin-top: 1rem; }
+.docs-body table { border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+.docs-body th, .docs-body td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; vertical-align: top; }
+.docs-body th { background: var(--surface); }
+.docs-body code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.88em; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.3rem; }
+.docs-body pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1rem; overflow-x: auto; }
+.docs-body pre code { background: none; border: none; padding: 0; }
+.docs-body img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; }
+.docs-body blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid var(--accent); background: var(--surface); }
+@media (max-width: 800px) {
+  .docs-layout { grid-template-columns: 1fr; }
+  .docs-nav { position: static; min-height: 0; border-right: none; border-bottom: 1px solid var(--border); }
+  .docs-body { padding: 1rem; }
+}

@@ -100,6 +100,7 @@ export default function AppHeader() {
           <NavLink to="/tickets">Tickets</NavLink>
           {isAdmin(user) && <NavLink to="/overview">Overview</NavLink>}
           {isAdmin(user) && <NavLink to="/people">People</NavLink>}
+          {isAdmin(user) && <NavLink to="/project-docs">Docs</NavLink>}
         </nav>
       )}
       <div className="topbar-end">
