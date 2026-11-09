@@ -47,12 +47,14 @@ def _inbox(db, user) -> list[dict]:
 
 @pytest.fixture
 def people(db):
-    """Sam and Priya (employees), Jordan (manager), Alex (admin)."""
+    """Alex (admin) <- Jordan (manager) <- Sam and Priya (employees)."""
+    alex = add_user(db, "admin", "Alex")
+    jordan = add_user(db, "manager", "Jordan", manager=alex)
     return {
-        "sam": add_user(db, "employee", "Sam"),
-        "priya": add_user(db, "employee", "Priya"),
-        "jordan": add_user(db, "manager", "Jordan"),
-        "alex": add_user(db, "admin", "Alex"),
+        "alex": alex,
+        "jordan": jordan,
+        "sam": add_user(db, "employee", "Sam", manager=jordan),
+        "priya": add_user(db, "employee", "Priya", manager=jordan),
     }
 
 
@@ -68,7 +70,7 @@ def _open_ticket(client, user, title="Gym membership"):
 # --- Ticket notifications: who receives what ----------------------------------------------
 
 
-def test_a_new_ticket_notifies_every_manager_and_admin_but_not_its_author(client, db, people):
+def test_a_new_ticket_notifies_the_managers_above_and_admins_but_not_its_author(client, db, people):
     ticket = _open_ticket(client, people["sam"])
 
     for who in ("jordan", "alex"):
@@ -107,12 +109,36 @@ def test_a_staff_owner_gets_one_notification_not_two(client, db, people):
     assert [n["kind"] for n in _inbox(db, people["jordan"])] == ["ticket.updated"]
 
 
-def test_a_phase_1_ticket_without_an_owner_notifies_only_staff(client, db, people):
+def test_a_phase_1_ticket_without_an_owner_notifies_only_admins(client, db, people):
+    casey = add_user(db, "admin", "Casey")
     db.execute("INSERT INTO tickets (title, question, user_name) VALUES ('Old', 'Old?', 'Someone')")
     _as(client, people["alex"])
     client.patch("/api/tickets/1", json={"status": "closed"})
-    assert [n["kind"] for n in _inbox(db, people["jordan"])] == ["ticket.updated"]
-    assert _inbox(db, people["sam"]) == [] and _inbox(db, people["priya"]) == []
+    assert [n["kind"] for n in _inbox(db, casey)] == ["ticket.updated"]
+    for who in ("jordan", "sam", "priya"):
+        assert _inbox(db, people[who]) == []  # in nobody's team
+
+
+def test_another_teams_manager_hears_nothing(client, db, people):
+    morgan = add_user(db, "manager", "Morgan", manager=people["alex"])  # a different team
+    ticket = _open_ticket(client, people["sam"])
+    _as(client, people["jordan"])
+    client.patch(f"/api/tickets/{ticket}", json={"status": "resolved"})
+    assert _inbox(db, morgan) == []
+
+
+def test_every_manager_up_the_line_hears(client, db, people):
+    director = add_user(db, "manager", "Dana")
+    db.execute("UPDATE users SET manager_id = %s WHERE id = %s", (director.id, people["jordan"].id))
+    _open_ticket(client, people["sam"])
+    assert [n["kind"] for n in _inbox(db, director)] == ["ticket.opened"]  # Sam -> Jordan -> Dana
+
+
+def test_inactive_people_receive_nothing(client, db, people):
+    db.execute("UPDATE users SET active = false WHERE id = %s", (people["jordan"].id,))
+    _open_ticket(client, people["sam"])
+    assert _inbox(db, people["jordan"]) == []
+    assert [n["kind"] for n in _inbox(db, people["alex"])] == ["ticket.opened"]
 
 
 def test_a_ticket_change_and_its_notifications_are_saved_together_or_not_at_all(client, db, people, monkeypatch):

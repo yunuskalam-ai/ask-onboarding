@@ -148,15 +148,19 @@ def test_only_admins_manage_people(client, db, role, allowed):
 TICKET = {"title": "Stock options", "question": "Do we get stock options?"}
 
 
-def test_employees_see_only_their_own_tickets_and_staff_see_all(client, db):
-    sign_in_as(client, db, "employee", "Sam")
+def test_employees_see_their_own_tickets_managers_their_team_admins_all(client, db):
+    jordan = add_user(db, "manager", "Jordan")
+    sign_in_as(client, db, "employee", "Sam", manager=jordan)
     client.post("/api/tickets", json=TICKET)
-    sign_in_as(client, db, "employee", "Priya")
+    sign_in_as(client, db, "employee", "Priya")  # reports to nobody
     client.post("/api/tickets", json={**TICKET, "title": "Company car"})
 
     assert [t["user_name"] for t in client.get("/api/tickets").json()] == ["Priya"]
 
-    sign_in_as(client, db, "manager", "Jordan")
+    client.post("/api/auth/sign-in", json={"email": jordan.email})
+    assert {t["user_name"] for t in client.get("/api/tickets").json()} == {"Sam"}  # his team only
+
+    sign_in_as(client, db, "admin", "Alex")
     assert {t["user_name"] for t in client.get("/api/tickets").json()} == {"Sam", "Priya"}
 
 
@@ -181,8 +185,8 @@ def test_admin_changes_a_role_and_it_applies_at_once(client, db):
 
     assert response.status_code == 200 and response.json()["role"] == "admin"
     assert _upload(sam).status_code == 202  # same session, new role: read fresh on every request
-    entry = db.execute("SELECT details FROM audit_log WHERE action = 'user.role'").fetchone()
-    assert entry["details"] == {"user": employee.email, "old": "employee", "new": "admin"}
+    entry = db.execute("SELECT details FROM audit_log WHERE action = 'user.change'").fetchone()
+    assert entry["details"] == {"user": employee.email, "changes": {"role": {"old": "employee", "new": "admin"}}}
 
 
 def test_the_last_admin_cannot_be_demoted(client, db):

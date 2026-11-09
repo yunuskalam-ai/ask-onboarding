@@ -58,7 +58,10 @@ def test_database_url() -> str:
 def db(test_database_url):
     """A connection to an empty test database."""
     with connect(test_database_url) as conn:
-        conn.execute("TRUNCATE documents, tickets, users, audit_log, questions, notifications RESTART IDENTITY CASCADE")
+        conn.execute(
+            "TRUNCATE documents, tickets, users, departments, audit_log, questions, notifications "
+            "RESTART IDENTITY CASCADE"
+        )
         yield conn
 
 
@@ -87,19 +90,22 @@ def other_db(test_database_url):
 # --- Users ----------------------------------------------------------------
 
 
-def add_user(conn, role: str = "employee", name: str | None = None, email: str | None = None) -> User:
+def add_user(
+    conn, role: str = "employee", name: str | None = None, email: str | None = None, manager: User | None = None
+) -> User:
+    """Insert a person. `manager` puts them in that manager's team."""
     name = name or f"Test {role.title()}"
     email = email or f"{name.lower().replace(' ', '.')}@test.example"
     row = conn.execute(
-        "INSERT INTO users (email, name, role) VALUES (%s, %s, %s) RETURNING id, email, name, role",
-        (email, name, role),
+        "INSERT INTO users (email, name, role, manager_id) VALUES (%s, %s, %s, %s) RETURNING id, email, name, role",
+        (email, name, role, manager.id if manager else None),
     ).fetchone()
     return User(**row)
 
 
-def sign_in_as(client, conn, role: str = "employee", name: str | None = None) -> User:
+def sign_in_as(client, conn, role: str = "employee", name: str | None = None, manager: User | None = None) -> User:
     """Create a user and sign the test client in as them, through the real endpoint."""
-    user = add_user(conn, role, name)
+    user = add_user(conn, role, name, manager=manager)
     response = client.post("/api/auth/sign-in", json={"email": user.email})
     assert response.status_code == 200, response.text
     return user

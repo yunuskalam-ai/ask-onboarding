@@ -166,9 +166,9 @@ def test_the_audit_log_names_the_actor_and_survives_their_deletion(client, db):
     entries = client.get("/api/admin/audit").json()
 
     assert entries[0]["actor"] is None and entries[0]["action"] == "sign_in"
-    role_change = next(e for e in entries if e["action"] == "user.role")
+    role_change = next(e for e in entries if e["action"] == "user.change")
     assert role_change["actor"] == "Alex"
-    assert role_change["details"]["new"] == "manager"
+    assert role_change["details"]["changes"]["role"]["new"] == "manager"
 
 
 @pytest.mark.parametrize(
