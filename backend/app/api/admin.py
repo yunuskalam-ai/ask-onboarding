@@ -11,8 +11,10 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app import diagnostics
 from app.db import Connection, one
-from app.deps import Admin, get_conn
+from app.deps import Admin, get_conn, get_database_url
+from app.runbook import runbook_for
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -230,3 +232,82 @@ def audit_log(admin: Admin, conn: Conn, limit: Limit = 50, offset: Offset = 0) -
 
 def _rounded(value: float | None) -> int | None:
     return None if value is None else round(value)
+
+
+# --- System status and alert details ----------------------------------------------------------
+
+
+class CheckOut(BaseModel):
+    name: str
+    ok: bool
+    summary: str
+    detail: str
+
+
+class StepOut(BaseModel):
+    text: str
+    command: str
+
+
+class AlertOut(BaseModel):
+    id: int
+    title: str
+    body: str
+    severity: str
+    key: str
+    first_seen: datetime
+    last_seen: datetime
+    occurrences: int
+    kind: str  # what kind of problem, from the runbook
+    meaning: str
+    causes: list[str]
+    steps: list[StepOut]
+    checks: list[CheckOut]  # run now
+    recovered: bool  # every check passes right now
+
+
+def _checks(database_url: str, names: list[str], document: str | None = None) -> list[CheckOut]:
+    run = {
+        "database": lambda: diagnostics.check_database(database_url),
+        "model": diagnostics.check_model,
+        "documents": lambda: diagnostics.check_documents(database_url, document),
+    }
+    return [CheckOut(**c.__dict__) for c in (run[name]() for name in names)]
+
+
+@router.get("/status")
+def system_status(admin: Admin, database_url: Annotated[str, Depends(get_database_url)]) -> list[CheckOut]:
+    """The database, the model and the library, checked now."""
+    return _checks(database_url, ["database", "model", "documents"])
+
+
+@router.get("/alerts/{notification_id}")
+def alert_details(
+    notification_id: int, admin: Admin, conn: Conn, database_url: Annotated[str, Depends(get_database_url)]
+) -> AlertOut:
+    """What happened, how often, what it means, how to fix it, and whether it has recovered."""
+    row = conn.execute(
+        "SELECT id, title, body, severity, dedupe_key, at, coalesce(last_seen_at, at) AS last_seen, occurrences "
+        "FROM notifications WHERE id = %s AND kind = 'system.alert'",
+        (notification_id,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, "No such alert.")
+    book = runbook_for(row["dedupe_key"] or "", row["body"])
+    checks = _checks(database_url, book.checks, book.document)
+    return AlertOut(
+        id=row["id"],
+        title=row["title"],
+        body=row["body"],
+        severity=row["severity"],
+        key=row["dedupe_key"] or "",
+        first_seen=row["at"],
+        last_seen=row["last_seen"],
+        occurrences=row["occurrences"],
+        kind=book.kind,
+        meaning=book.meaning,
+        causes=book.causes,
+        steps=[StepOut(text=s.text, command=s.command) for s in book.steps],
+        checks=checks,
+        recovered=all(c.ok for c in checks),
+    )

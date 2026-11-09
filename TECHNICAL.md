@@ -149,6 +149,8 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `GET /admin/overview?days&tz` | **admin** | KPIs for the last N days (1–365), with days in time zone `tz` |
 | `GET /admin/questions?limit&offset` | **admin** | The question log, newest first |
 | `GET /admin/audit?limit&offset` | **admin** | The audit log, newest first |
+| `GET /admin/status` | **admin** | Live checks: database, answer model, document library |
+| `GET /admin/alerts/{id}` | **admin** | One system alert: first and last seen, how many times, what it means, likely causes, fix steps with commands, live checks, and whether it has recovered |
 | `GET /admin/docs` | **admin** | The project documents and whether each is available |
 | `GET /admin/docs/{slug}` | **admin** | One document as Markdown |
 | `GET /admin/docs/assets/{name}` | **admin** | An image from `docs/` |
@@ -287,7 +289,7 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
 - **System alerts** (`alert_admins`):
   - **Own connection:** the alert survives even when the failing request rolls back.
   - **Never raise.**
-  - **Deduplicated:** at most one per `dedupe_key` per 10 minutes, checked under `pg_advisory_xact_lock(hashtext(key))` so simultaneous failures can't each insert one.
+  - **One alert per incident:** while a problem keeps recurring with no gap longer than 10 minutes, it stays one alert whose `occurrences` and `last_seen_at` grow (and whose message is the latest). This is checked under `pg_advisory_xact_lock(hashtext(key))`, so simultaneous failures can't each insert one.
   - **Queued while the database is down:** in memory, capped at 100 (oldest dropped first), and delivered by the 30-second loop when it's back. If the API restarts while the database is down, queued alerts are lost.
 - **Sources of alerts:**
 
@@ -302,6 +304,19 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
 
 - **Delivery:** the header bell polls `GET /notifications/unread` every 30 s, only while the tab is visible, and again when you return to it. Clicking a notification marks it read and opens its link (`/tickets#ticket-N` scrolls to and highlights the ticket).
 - **Retention:** notifications older than 180 days are deleted on start.
+
+### Alert details: runbooks and live checks
+
+Clicking a system alert opens `/alerts/<id>`.
+- **[runbook.py](backend/app/runbook.py)** maps the alert's key to a runbook: what people using the app experience, the likely causes, and numbered fixes with exact commands.
+  - The model runbook differs for Ollama and Claude.
+  - A failed document gets OCR advice when it has no text layer.
+  - A server error names its endpoint and error type, and greps the logs for that type.
+- **[diagnostics.py](backend/app/diagnostics.py)** runs the live checks, each quick and never raising:
+  - **database:** `SELECT 1`, with the time it took
+  - **model:** Ollama's `/api/tags` and whether the configured model is downloaded, with a hard 1.5 s deadline enforced by a worker thread, because a stopped container's hostname takes about 4 s to fail to resolve, which a socket timeout doesn't cover. Claude is checked by configuration only, never with a paid call.
+  - **documents:** ready, failed and stuck counts, or one file's state
+- **The page** re-runs its checks every 15 seconds while visible and shows *Recovered* once they all pass. The Overview shows the same three checks as **System status**, refreshed every 30 seconds.
 
 ## 12. Admin Overview and question log (Phase 2)
 

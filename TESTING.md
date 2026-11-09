@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with people, departments and reporting lines). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with alert details). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **418 passed**, 0 failed |
+| Backend tests | pytest | **446 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
 | Frontend tests | vitest | **95 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 33 files |
+| Python types | mypy | 0 errors in 35 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -229,6 +229,22 @@ Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it
 | Notifications for another team's manager, or an inactive manager | none | `test_another_teams_manager_hears_nothing`, `test_inactive_people_receive_nothing` |
 | A loop or a missing manager in the data shown on the People page | everyone still shown once, no hang | `buildTree` tests |
 
+### Alert details and live checks ([test_alerts.py](backend/tests/test_alerts.py))
+
+| Situation | Expected | Test |
+| --- | --- | --- |
+| The database can't be reached | the check says so, with no exception | `test_the_database_check` |
+| Ollama unreachable; running but the model isn't downloaded | each reported in plain words | `test_the_model_check_spots_an_unreachable_server`, `test_the_model_check_spots_a_missing_model` |
+| **The hostname lookup hangs** (a stopped container) | the check gives up after its deadline, well under a second in the test | `test_the_model_check_answers_quickly_even_when_the_lookup_hangs` |
+| Claude configured or missing its key | judged by configuration, never by a paid call | `test_the_model_check_for_claude_never_spends_tokens` |
+| A failed, stuck or deleted document | reported per file, and for the library | `test_the_documents_check`, `test_a_stuck_document_is_reported` |
+| Every kind of alert key, including an unknown one | a runbook with meaning, causes and steps | `test_every_alert_kind_has_a_runbook_with_steps` |
+| The same problem repeating | one alert counting its occurrences; a new one after 10 quiet minutes | `test_the_same_problem_alerts_once_per_window` |
+| A ticket notification, or a missing id, at `/admin/alerts/{id}` | 404 | `test_a_ticket_notification_is_not_an_alert` |
+| Employees, managers, signed out | 403 / 401 | `test_only_admins_see_alerts_and_status`, `test_signed_out_gets_401` |
+
+Checked live: with Ollama stopped, two questions produced **one alert counted twice**. Its page showed "Still failing" and six fix steps, and loaded in 1.6 s (it took 4 s before the deadline fix). After starting Ollama, the same page showed "Recovered". There were no console or CSP errors.
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -271,10 +287,10 @@ From `pytest --cov` (statements and branches):
 
 | Module | Coverage | Not covered |
 | --- | --- | --- |
-| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/docs.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
+| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/runbook.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/docs.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
 | `app/api/tickets.py` | 99% | the default ticket-drafter getter (replaced in tests) |
 | `app/api/auth.py`, `app/startup.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py` | 96–98% | default dependency getters, one log-only branch |
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.2%** | |
+| **Total** | **97.3%** | |

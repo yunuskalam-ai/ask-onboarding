@@ -325,3 +325,28 @@ export type ProjectDoc = { slug: string; title: string; path: string; markdown: 
 export const listProjectDocs = () => getJson<ProjectDocSummary[]>("/api/admin/docs");
 
 export const getProjectDoc = (slug: string) => getJson<ProjectDoc>(`/api/admin/docs/${encodeURIComponent(slug)}`);
+
+// --- Alerts and system status (admins) ----------------------------------------------------
+
+export type HealthCheck = { name: "database" | "model" | "documents"; ok: boolean; summary: string; detail: string };
+
+export type AlertDetails = {
+  id: number;
+  title: string;
+  body: string;
+  severity: "info" | "warning" | "error";
+  key: string;
+  first_seen: string;
+  last_seen: string;
+  occurrences: number;
+  kind: string;
+  meaning: string;
+  causes: string[];
+  steps: { text: string; command: string }[];
+  checks: HealthCheck[]; // run when requested
+  recovered: boolean;
+};
+
+export const getAlert = (id: number) => getJson<AlertDetails>(`/api/admin/alerts/${id}`);
+
+export const getSystemStatus = () => getJson<HealthCheck[]>("/api/admin/status");

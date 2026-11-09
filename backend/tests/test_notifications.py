@@ -247,7 +247,8 @@ def test_alerts_go_to_admins_only(db, test_database_url, people):
     notifications.alert_admins(test_database_url, "model", "The answer model failed", "Ollama is down")
 
     [alert] = _inbox(db, people["alex"])
-    assert (alert["kind"], alert["severity"], alert["link"]) == ("system.alert", "error", "/overview")
+    alert_id = db.execute("SELECT id FROM notifications").fetchone()["id"]
+    assert (alert["kind"], alert["severity"], alert["link"]) == ("system.alert", "error", f"/alerts/{alert_id}")
     for who in ("sam", "priya", "jordan"):
         assert _inbox(db, people[who]) == []
 
@@ -258,7 +259,13 @@ def test_the_same_problem_alerts_once_per_window(db, test_database_url, people):
     notifications.alert_admins(test_database_url, "document:a.pdf", "a.pdf could not be processed")
     assert len(_inbox(db, people["alex"])) == 2
 
-    db.execute("UPDATE notifications SET at = now() - interval '11 minutes'")  # the window has passed
+    model = db.execute("SELECT occurrences FROM notifications WHERE dedupe_key = 'model'").fetchone()
+    assert model["occurrences"] == 3  # one alert, counting its repeats
+
+    # 11 quiet minutes: the problem stopped, so a new failure is a new alert.
+    db.execute(
+        "UPDATE notifications SET at = now() - interval '11 minutes', last_seen_at = now() - interval '11 minutes'"
+    )
     notifications.alert_admins(test_database_url, "model", "The answer model failed")
     assert len(_inbox(db, people["alex"])) == 3
 

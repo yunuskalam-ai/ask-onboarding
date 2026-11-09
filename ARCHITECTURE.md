@@ -9,7 +9,7 @@ This page answers the brief's six questions. **[TECHNICAL.md](TECHNICAL.md)** is
 | | Phase 1: the brief | Phase 2: added since |
 | --- | --- | --- |
 | Answers | upload, cited streamed answers, "not in the documents", ticket by tool call | typing indicator |
-| Quality | 20-question eval, hybrid search | CI, 418 + 95 tests, 97% coverage, [TESTING.md](TESTING.md) |
+| Quality | 20-question eval, hybrid search | CI, 446 + 95 tests, 97% coverage, [TESTING.md](TESTING.md) |
 | People | – | sign-in, three roles enforced by the server; departments and reporting lines (managers handle their team's tickets); People page |
 | Operations | `docker compose up` | ticket workflow, notifications and admin alerts, admin Overview (KPIs, question log, audit), Docs page, security hardening, public deployment |
 
@@ -69,7 +69,7 @@ That's about **5–6 million chunks**, and 0.7 questions per second on average (
 
 Checked by stopping the Ollama container:
 - **Chat shows a clear error** within about 5 s. Each question fails on its own, with no frozen spinner.
-- **Admins get one alert:** "The answer model failed", with the reason. That's **one per 10 minutes, not one per question**, enforced under a database lock, so simultaneous failures can't duplicate it.
+- **Admins get one alert:** "The answer model failed", with the reason. It's **one alert for the whole outage, counting the repeats**, enforced under a database lock, so simultaneous failures can't duplicate it. Opening it shows the fix steps and a live check that turns to *Recovered* when Ollama is back.
 - **Everything else keeps working:** off-topic questions are still refused, and Documents, Tickets and the Overview all load.
 - **Ticket drafts fall back** to the employee's own question, because an outage is when people most need a ticket.
 - **If the database is down too,** alerts wait in memory and are delivered when it's back.
@@ -81,7 +81,7 @@ Checked by stopping the Ollama container:
 - **Every pull request runs the gates in CI:**
   - lint, including security rules
   - type checks
-  - 418 backend and 95 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
+  - 446 backend and 95 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
   - a **95% coverage floor**
   - dependency audits
   - both Docker images
