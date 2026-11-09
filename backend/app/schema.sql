@@ -164,3 +164,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id BIGINT REFERENCES users(id
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_not_own_manager;
 ALTER TABLE users ADD CONSTRAINT users_not_own_manager CHECK (manager_id IS NULL OR manager_id <> id);
 CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
+
+-- Alert details: an ongoing problem is one alert that counts its repeats.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS occurrences INT NOT NULL DEFAULT 1;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
+UPDATE notifications SET last_seen_at = at WHERE last_seen_at IS NULL;
+-- System alerts open their detail page (older ones pointed at the overview).
+UPDATE notifications SET link = '/alerts/' || id WHERE kind = 'system.alert' AND link = '/overview';

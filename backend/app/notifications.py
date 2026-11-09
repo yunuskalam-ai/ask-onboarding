@@ -17,8 +17,9 @@ change and its notifications are saved together or not at all.
 System alerts (alert_admins) are different: they report that something failed,
 often inside a request that is itself rolling back. So they:
   - use their own connection, and never raise;
-  - are deduplicated: at most one alert per key per ALERT_WINDOW, so a model
-    outage gives one alert, not one per question;
+  - are deduplicated: while a problem keeps happening (no gap longer than
+    ALERT_WINDOW), it stays one alert whose `occurrences` and `last_seen_at`
+    grow, so a model outage gives one alert, not one per question;
   - wait in a small in-memory queue if the database itself is unreachable,
     and are delivered by flush_pending() once it's back.
 """
@@ -80,20 +81,20 @@ def _publish(
     dedupe_key: str | None = None,
     at: datetime | None = None,
 ) -> int:
-    """Store one notification and its recipients. Returns how many people receive it."""
+    """Store one notification and its recipients. Returns the notification's id."""
     notification = one(
         conn.execute(
-            "INSERT INTO notifications (at, kind, severity, title, body, link, ticket_id, dedupe_key) "
-            "VALUES (coalesce(%s, now()), %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (at, kind, severity, title, body, link, ticket_id, dedupe_key),
+            "INSERT INTO notifications (at, last_seen_at, kind, severity, title, body, link, ticket_id, dedupe_key) "
+            "VALUES (coalesce(%s, now()), coalesce(%s, now()), %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (at, at, kind, severity, title, body, link, ticket_id, dedupe_key),
         )
     )
     # The audience SQL comes from _AUDIENCES above, never from a caller.
     recipients = _AUDIENCES[audience]
     insert = "INSERT INTO notification_recipients (notification_id, user_id) SELECT %(notification)s, id FROM"
     query = f"{insert} ({recipients}) AS r"
-    cursor = conn.execute(query, params | {"notification": notification["id"]})
-    return cursor.rowcount
+    conn.execute(query, params | {"notification": notification["id"]})
+    return notification["id"]
 
 
 # --- Tickets (written in the caller's transaction) ------------------------------------------
@@ -189,24 +190,32 @@ def _store(database_url: str, alert: Alert) -> None:
         # One writer per key at a time, so two simultaneous failures can't both
         # pass the "already alerted?" check.
         conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (alert.key,))
-        recent = conn.execute(
-            "SELECT 1 FROM notifications WHERE dedupe_key = %s AND at > %s - %s",
+        ongoing = conn.execute(
+            "SELECT id FROM notifications WHERE dedupe_key = %s AND coalesce(last_seen_at, at) > %s - %s "
+            "ORDER BY id DESC LIMIT 1",
             (alert.key, alert.at, ALERT_WINDOW),
         ).fetchone()
-        if recent:
+        if ongoing:
+            # The same problem again: count it on the existing alert, keep the latest details.
+            conn.execute(
+                "UPDATE notifications SET occurrences = occurrences + 1, last_seen_at = greatest(last_seen_at, %s), "
+                "body = coalesce(%s, body) WHERE id = %s",  # an empty new body keeps the old text
+                (alert.at, alert.body or None, ongoing["id"]),
+            )
             return
-        _publish(
+        notification_id = _publish(
             conn,
             kind="system.alert",
             title=alert.title,
             body=alert.body,
-            link="/overview",
+            link=None,  # set below, once the id is known
             severity=alert.severity,
             dedupe_key=alert.key,
             at=alert.at,
             audience="admins",
             params={},
         )
+        conn.execute("UPDATE notifications SET link = '/alerts/' || id WHERE id = %s", (notification_id,))
 
 
 def prune(conn: Connection, keep_days: int = 180) -> int:
