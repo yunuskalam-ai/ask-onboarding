@@ -119,3 +119,29 @@ CREATE TABLE IF NOT EXISTS questions (
     total_ms        INT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS questions_at_idx ON questions (at DESC);
+
+-- Notifications: one row per event, and one recipient row per person it
+-- concerns, so each person has their own read/unread state. Recipients are
+-- decided when the event happens (see app/notifications.py).
+CREATE TABLE IF NOT EXISTS notifications (
+    id          BIGSERIAL PRIMARY KEY,
+    at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    kind        TEXT NOT NULL CHECK (kind IN ('ticket.opened', 'ticket.updated', 'system.alert')),
+    severity    TEXT NOT NULL DEFAULT 'info' CHECK (severity IN ('info', 'warning', 'error')),
+    title       TEXT NOT NULL,
+    body        TEXT NOT NULL DEFAULT '',
+    link        TEXT,                           -- an in-app path, e.g. /tickets#ticket-7
+    ticket_id   BIGINT REFERENCES tickets(id) ON DELETE CASCADE,
+    dedupe_key  TEXT                            -- system alerts: at most one per key per 10 minutes
+);
+CREATE INDEX IF NOT EXISTS notifications_dedupe_idx ON notifications (dedupe_key, at DESC) WHERE dedupe_key IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS notification_recipients (
+    notification_id  BIGINT NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+    user_id          BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    read_at          TIMESTAMPTZ,              -- NULL = unread
+    PRIMARY KEY (notification_id, user_id)
+);
+-- "My unread notifications" is the query the header bell runs every 30 seconds.
+CREATE INDEX IF NOT EXISTS notification_recipients_unread_idx
+    ON notification_recipients (user_id) WHERE read_at IS NULL;
