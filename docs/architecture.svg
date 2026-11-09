@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 640" width="1100" height="640" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Ask Onboarding architecture</title>
+  <desc id="desc">The browser talks to Caddy and nginx, which forward API calls to the FastAPI service. The API uses Postgres with pgvector for all data and Ollama for the answer model.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#57606a"/>
+    </marker>
+    <style>
+      .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+      .api { fill: #eef6f1; stroke: #2f6f4f; stroke-width: 1.5; }
+      .mod { fill: #ffffff; stroke: #b7cfc1; stroke-width: 1.2; }
+      .p2 { fill: #ffffff; stroke: #7b3fb0; stroke-width: 1.2; stroke-dasharray: 5 3; }
+      .h { font-size: 15px; font-weight: 700; fill: #1f2328; }
+      .s { font-size: 12px; fill: #424a53; }
+      .m { font-size: 13px; font-weight: 600; fill: #1f2328; }
+      .tag { font-size: 11px; fill: #2f6f4f; font-weight: 600; }
+      .flow { stroke: #57606a; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+      .lbl { font-size: 11.5px; fill: #57606a; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="640" rx="14" fill="#ffffff"/>
+
+  <!-- Browser -->
+  <rect class="box" x="20" y="150" width="190" height="300" rx="10"/>
+  <text class="h" x="36" y="178">Browser</text>
+  <text class="s" x="36" y="198">React + TypeScript</text>
+  <text class="s" x="36" y="228">Home · Sign in</text>
+  <text class="s" x="36" y="248">Chat (streamed answers,</text>
+  <text class="s" x="36" y="264">  clickable citations)</text>
+  <text class="s" x="36" y="284">Documents · Tickets</text>
+  <text class="s" x="36" y="304">Overview · People · Docs</text>
+  <text class="s" x="36" y="324">  (admins)</text>
+  <text class="s" x="36" y="344">Notification bell</text>
+  <text class="s" x="36" y="364">Light / dark theme</text>
+  <text class="tag" x="36" y="430">session cookie (HttpOnly)</text>
+
+  <!-- Edge: Caddy + nginx -->
+  <rect class="box" x="240" y="150" width="190" height="105" rx="10"/>
+  <text class="h" x="256" y="178">Caddy</text>
+  <text class="s" x="256" y="198">deployed server only</text>
+  <text class="s" x="256" y="218">HTTPS · HSTS</text>
+  <text class="s" x="256" y="238">site-wide password</text>
+
+  <rect class="box" x="240" y="280" width="190" height="170" rx="10"/>
+  <text class="h" x="256" y="308">nginx (web)</text>
+  <text class="s" x="256" y="328">serves the built app</text>
+  <text class="s" x="256" y="348">CSP + security headers</text>
+  <text class="s" x="256" y="368">/api → FastAPI</text>
+  <text class="s" x="256" y="388">no buffering, so answers</text>
+  <text class="s" x="256" y="404">  stream word by word</text>
+
+  <path class="flow" d="M210 300 H240"/>
+  <path class="flow" d="M335 255 V280"/>
+  <path class="flow" d="M430 365 H462"/>
+
+  <!-- API -->
+  <rect class="api" x="465" y="30" width="360" height="590" rx="12"/>
+  <text class="h" x="481" y="58">FastAPI (api)</text>
+  <text class="s" x="481" y="76">Python 3.12 · roles checked on every request</text>
+
+  <rect class="mod" x="481" y="92" width="160" height="78" rx="8"/>
+  <text class="m" x="493" y="114">Retrieval</text>
+  <text class="s" x="493" y="132">embed (bge-small)</text>
+  <text class="s" x="493" y="148">hybrid search + RRF</text>
+  <text class="s" x="493" y="164">guard: score ≥ 0.55</text>
+
+  <rect class="mod" x="651" y="92" width="160" height="78" rx="8"/>
+  <text class="m" x="663" y="114">Chat</text>
+  <text class="s" x="663" y="132">grounded prompt, [n]</text>
+  <text class="s" x="663" y="148">stream as SSE</text>
+  <text class="s" x="663" y="164">refusal detection</text>
+
+  <rect class="mod" x="481" y="180" width="160" height="78" rx="8"/>
+  <text class="m" x="493" y="202">Ingestion</text>
+  <text class="s" x="493" y="220">parse → chunk 400/50</text>
+  <text class="s" x="493" y="236">→ embed, background</text>
+  <text class="s" x="493" y="252">replace = 1 transaction</text>
+
+  <rect class="mod" x="651" y="180" width="160" height="78" rx="8"/>
+  <text class="m" x="663" y="202">Tickets</text>
+  <text class="s" x="663" y="220">draft by tool call</text>
+  <text class="s" x="663" y="236">person confirms</text>
+  <text class="s" x="663" y="252">status workflow</text>
+
+  <text class="tag" x="481" y="286">Phase 2</text>
+  <rect class="p2" x="481" y="294" width="160" height="78" rx="8"/>
+  <text class="m" x="493" y="316">Sign-in &amp; roles</text>
+  <text class="s" x="493" y="334">sessions (hashed)</text>
+  <text class="s" x="493" y="350">3 roles, server-checked</text>
+  <text class="s" x="493" y="366">Origin (CSRF) check</text>
+
+  <rect class="p2" x="651" y="294" width="160" height="78" rx="8"/>
+  <text class="m" x="663" y="316">Notifications</text>
+  <text class="s" x="663" y="334">ticket updates</text>
+  <text class="s" x="663" y="350">admin system alerts</text>
+  <text class="s" x="663" y="366">deduplicated, queued</text>
+
+  <rect class="p2" x="481" y="382" width="160" height="78" rx="8"/>
+  <text class="m" x="493" y="404">Admin overview</text>
+  <text class="s" x="493" y="422">question log, KPIs</text>
+  <text class="s" x="493" y="438">gaps in the documents</text>
+  <text class="s" x="493" y="454">audit log</text>
+
+  <rect class="p2" x="651" y="382" width="160" height="78" rx="8"/>
+  <text class="m" x="663" y="404">Project docs</text>
+  <text class="s" x="663" y="422">fixed list of files</text>
+  <text class="s" x="663" y="438">admins only</text>
+  <text class="s" x="663" y="454">no path traversal</text>
+
+  <rect class="mod" x="481" y="480" width="330" height="76" rx="8"/>
+  <text class="m" x="493" y="502">Background</text>
+  <text class="s" x="493" y="520">on start: seed sample docs, warm up the model,</text>
+  <text class="s" x="493" y="536">prune old notifications; every 30 s: deliver</text>
+  <text class="s" x="493" y="552">alerts that waited for the database</text>
+
+  <text class="s" x="481" y="582">Unhandled error → plain 500 + admin alert</text>
+  <text class="s" x="481" y="600">Settings validated at startup</text>
+
+  <!-- Database -->
+  <rect class="box" x="860" y="40" width="220" height="330" rx="10"/>
+  <text class="h" x="876" y="68">Postgres 16</text>
+  <text class="s" x="876" y="86">+ pgvector</text>
+  <text class="m" x="876" y="116">Documents</text>
+  <text class="s" x="876" y="134">documents, chunks</text>
+  <text class="s" x="876" y="150">HNSW (vectors) + GIN (words)</text>
+  <text class="m" x="876" y="180">Tickets</text>
+  <text class="s" x="876" y="198">tickets, ticket_events</text>
+  <text class="m" x="876" y="228">People</text>
+  <text class="s" x="876" y="246">users, sessions</text>
+  <text class="m" x="876" y="276">Records</text>
+  <text class="s" x="876" y="294">questions, audit_log</text>
+  <text class="s" x="876" y="310">notifications,</text>
+  <text class="s" x="876" y="326">notification_recipients</text>
+
+  <!-- Model -->
+  <rect class="box" x="860" y="400" width="220" height="150" rx="10"/>
+  <text class="h" x="876" y="428">Ollama</text>
+  <text class="s" x="876" y="448">qwen2.5:3b on CPU</text>
+  <text class="s" x="876" y="468">local: no API key,</text>
+  <text class="s" x="876" y="484">documents stay on the server</text>
+  <text class="s" x="876" y="512">Optional: Claude</text>
+  <text class="s" x="876" y="528">LLM_PROVIDER=anthropic</text>
+
+  <path class="flow" d="M825 200 H858"/>
+  <text class="lbl" x="829" y="192">SQL</text>
+  <path class="flow" d="M825 470 H858"/>
+  <text class="lbl" x="829" y="462">HTTP</text>
+
+  <!-- Legend -->
+  <rect x="20" y="560" width="14" height="14" rx="3" fill="#ffffff" stroke="#7b3fb0" stroke-dasharray="5 3"/>
+  <text class="s" x="42" y="572">Phase 2 additions (beyond the brief)</text>
+  <rect x="20" y="586" width="14" height="14" rx="3" fill="#ffffff" stroke="#b7cfc1"/>
+  <text class="s" x="42" y="598">Phase 1: the take-home brief</text>
+</svg>
