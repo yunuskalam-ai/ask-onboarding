@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     question    TEXT NOT NULL,                  -- what the employee asked, word for word
     summary     TEXT NOT NULL DEFAULT '',       -- drafted by the model, edited by the employee
     user_name   TEXT NOT NULL,
-    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+    status      TEXT NOT NULL DEFAULT 'open',   -- see tickets_status_check below
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -76,3 +76,25 @@ CREATE INDEX IF NOT EXISTS audit_log_at_idx ON audit_log (at DESC);
 
 -- Tickets belong to the person who opened them (older tickets have none).
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id) ON DELETE SET NULL;
+
+-- Ticket workflow: open -> in_progress -> resolved -> closed (and back, to
+-- reopen). Phase 1 had only open/closed; dropping and re-adding the check
+-- upgrades an existing database, and both statuses are still valid.
+ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_check;
+ALTER TABLE tickets ADD CONSTRAINT tickets_status_check
+    CHECK (status IN ('open', 'in_progress', 'resolved', 'closed'));
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Every status change: who, when, from what to what, and an optional note.
+-- The note is how the help desk answers; the employee sees it on their ticket.
+CREATE TABLE IF NOT EXISTS ticket_events (
+    id           BIGSERIAL PRIMARY KEY,
+    ticket_id    BIGINT NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id      BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    user_name    TEXT NOT NULL,                  -- kept even if the user is deleted
+    from_status  TEXT NOT NULL,
+    to_status    TEXT NOT NULL,
+    note         TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS ticket_events_ticket_idx ON ticket_events (ticket_id, at);
