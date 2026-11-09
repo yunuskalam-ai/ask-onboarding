@@ -103,7 +103,8 @@ def overview(admin: Admin, conn: Conn, days: Days = 30, tz: TimeZone = "UTC") ->
             SELECT g.day::date AS day,
                    count(q.id) AS total,
                    count(q.id) FILTER (WHERE q.outcome = 'answered') AS answered
-            FROM today, generate_series(today.local_today - (%(days)s - 1), today.local_today, interval '1 day') AS g(day)
+            FROM today,
+                 generate_series(today.local_today - (%(days)s - 1), today.local_today, interval '1 day') AS g(day)
             LEFT JOIN questions q ON (q.at AT TIME ZONE %(tz)s)::date = g.day::date
             GROUP BY g.day ORDER BY g.day
             """,
