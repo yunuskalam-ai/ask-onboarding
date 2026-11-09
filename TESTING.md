@@ -2,22 +2,23 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with notifications). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with the Docs page). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **336 passed**, 0 failed |
-| Backend coverage | pytest-cov, branches included | **97.3%** (the build fails below 95%) |
-| Frontend tests | vitest | **66 passed**, 0 failed |
+| Backend tests | pytest | **357 passed**, 0 failed |
+| Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
+| Frontend tests | vitest | **91 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 31 files |
+| Python types | mypy | 0 errors in 32 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
 | Known vulnerabilities, npm | npm audit | 0 |
+| Docs links and `#anchors` | scripts/check_links.py | all resolve, in 7 documents |
 | Answer quality | [eval/run_eval.py](eval/run_eval.py) | 94% accuracy, 4/4 correct refusals, 0 false refusals (see [README](README.md#evaluation)) |
 
 ## How to run everything
@@ -200,6 +201,16 @@ Expected result means the server's answer. Every test listed passed in the run a
 
 Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it with a note. Then **the model was stopped** and a question asked. Sam was told about his own ticket only; Jordan about the new ticket only; Alex about both, plus a red "The answer model failed" alert. In headless Edge, clicking Sam's notification opened `/tickets#ticket-6`, with the ticket highlighted and the badge cleared.
 
+### Project docs ([test_docs_api.py](backend/tests/test_docs_api.py), [docsLinks.test.ts](frontend/src/docsLinks.test.ts))
+
+| Attempt | Expected | Test |
+| --- | --- | --- |
+| `.env`, `README.md` (a path, not a name), `..%2F.env`, encoded `../`, a wrong extension, `chat.png.exe` | 404, and the secret never appears in the response | `test_nothing_outside_the_list_can_be_read` (10 cases) |
+| An employee or manager | 403 for the list, a document and an image | `test_only_admins` |
+| An SVG or PNG from `docs/` | `nosniff` and CSP `sandbox` | `test_images_are_served_inert` |
+| Links in a document: `javascript:`, `data:`, `//host`, `vbscript:`, climbing out of the repo | not followed | `resolveLink` tests |
+| Images: an external URL, `data:`, `docs/../.env`, a sub-folder, upper case | not loaded | `resolveImage` tests |
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -242,10 +253,10 @@ From `pytest --cov` (statements and branches):
 
 | Module | Coverage | Not covered |
 | --- | --- | --- |
-| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
+| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/docs.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
 | `app/api/tickets.py` | 99% | the default ticket-drafter getter (replaced in tests) |
 | `app/api/auth.py`, `app/startup.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py` | 96–98% | default dependency getters, one log-only branch |
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.3%** | |
+| **Total** | **97.2%** | |

@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from app.api import admin, auth, chat, documents, notifications, retrieve, tickets, users
+from app.api import admin, auth, chat, docs, documents, notifications, retrieve, tickets, users
 from app.auth import seed_demo_users
 from app.config import settings
 from app.db import connect, init_schema
@@ -38,6 +38,7 @@ app.add_middleware(OriginCheckMiddleware)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(admin.router)
+app.include_router(docs.router)
 app.include_router(documents.router)
 app.include_router(retrieve.router)
 app.include_router(chat.router)

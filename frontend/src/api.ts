@@ -288,3 +288,13 @@ export const unreadNotifications = () => getJson<{ unread: number }>("/api/notif
 export const markNotificationRead = (id: number) => sendJson<void>("POST", `/api/notifications/${id}/read`, {});
 
 export const markAllNotificationsRead = () => sendJson<void>("POST", "/api/notifications/read-all", {});
+
+// --- Project docs (admins) ---------------------------------------------------------------
+
+export type ProjectDocSummary = { slug: string; title: string; path: string; available: boolean };
+
+export type ProjectDoc = { slug: string; title: string; path: string; markdown: string };
+
+export const listProjectDocs = () => getJson<ProjectDocSummary[]>("/api/admin/docs");
+
+export const getProjectDoc = (slug: string) => getJson<ProjectDoc>(`/api/admin/docs/${encodeURIComponent(slug)}`);
