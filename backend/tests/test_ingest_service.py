@@ -14,9 +14,7 @@ def _document(db, document_id):
 
 
 def _chunk_texts(db, document_id):
-    rows = db.execute(
-        "SELECT text FROM chunks WHERE document_id = %s ORDER BY chunk_index", (document_id,)
-    ).fetchall()
+    rows = db.execute("SELECT text FROM chunks WHERE document_id = %s ORDER BY chunk_index", (document_id,)).fetchall()
     return [row["text"] for row in rows]
 
 

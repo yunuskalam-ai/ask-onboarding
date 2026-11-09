@@ -74,6 +74,7 @@ def test_documents_that_are_not_ready_are_never_returned(indexed):
 
 # --- API ------------------------------------------------------------------
 
+
 @pytest.fixture
 def client(indexed, test_database_url):
     app.dependency_overrides[get_database_url] = lambda: test_database_url
@@ -96,13 +97,20 @@ def test_retrieve_endpoint_returns_scored_sources(client):
 
 @pytest.mark.parametrize(
     "payload",
-    [{"question": ""}, {"question": "   "}, {"question": "x" * 1001}, {"question": "hi", "top_k": 0}, {"question": "hi", "top_k": 21}],
+    [
+        {"question": ""},
+        {"question": "   "},
+        {"question": "x" * 1001},
+        {"question": "hi", "top_k": 0},
+        {"question": "hi", "top_k": 21},
+    ],
 )
 def test_retrieve_endpoint_validates_input(client, payload):
     assert client.post("/api/retrieve", json=payload).status_code == 422
 
 
 # --- Hybrid search (vector + keyword, Reciprocal Rank Fusion) -----------------
+
 
 def test_hybrid_restores_the_keyword_match_that_vector_search_ranks_third(indexed):
     question = "Is there car parking at the London office?"

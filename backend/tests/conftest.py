@@ -20,6 +20,7 @@ def sample_docs() -> Path:
 # --- Database -------------------------------------------------------------
 # Tests use their own database, <name>_test, so they never touch dev data.
 
+
 @pytest.fixture(scope="session")
 def test_database_url() -> str:
     url = sibling_database_url("test")
@@ -62,6 +63,7 @@ def other_db(test_database_url):
 
 # --- Users ----------------------------------------------------------------
 
+
 def add_user(conn, role: str = "employee", name: str | None = None, email: str | None = None) -> User:
     name = name or f"Test {role.title()}"
     email = email or f"{name.lower().replace(' ', '.')}@test.example"
@@ -86,6 +88,7 @@ TEST_USER = User(id=0, email="tester@test.example", name="Tester", role="employe
 
 
 # --- Embeddings -----------------------------------------------------------
+
 
 def fake_embed(texts: list[str]) -> list[np.ndarray]:
     """Deterministic stand-in for the real model: same text, same vector.

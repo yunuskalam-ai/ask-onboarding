@@ -25,6 +25,7 @@ def client(db, test_database_url):
 
 # --- Cross-site request forgery (CSRF) ---------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("origin", "host", "expected"),
     [
@@ -46,9 +47,7 @@ def test_same_origin(origin, host, expected):
 
 def test_cross_site_sign_in_is_blocked_and_creates_no_session(client, db):
     user = add_user(db, "admin")
-    response = client.post(
-        "/api/auth/sign-in", json={"email": user.email}, headers={"Origin": "https://evil.example"}
-    )
+    response = client.post("/api/auth/sign-in", json={"email": user.email}, headers={"Origin": "https://evil.example"})
     assert response.status_code == 403
     assert db.execute("SELECT count(*) AS n FROM sessions").fetchone()["n"] == 0
 
@@ -77,7 +76,12 @@ def test_cross_site_upload_is_blocked(client, db):
 
 def test_same_origin_and_originless_requests_pass(client, db):
     user = add_user(db, "employee")
-    assert client.post("/api/auth/sign-in", json={"email": user.email}, headers={"Origin": "http://testserver"}).status_code == 200
+    assert (
+        client.post(
+            "/api/auth/sign-in", json={"email": user.email}, headers={"Origin": "http://testserver"}
+        ).status_code
+        == 200
+    )
     assert client.post("/api/auth/sign-in", json={"email": user.email}).status_code == 200  # curl, scripts
 
 
@@ -87,6 +91,7 @@ def test_reads_are_not_blocked_by_origin(client, db):
 
 
 # --- Sessions --------------------------------------------------------------------------
+
 
 def test_switching_accounts_ends_the_previous_session(client, db):
     sign_in_as(client, db, "admin")
@@ -105,6 +110,7 @@ def test_junk_session_cookies_are_refused(token):
 
 
 # --- Injection ----------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("email", ["' OR 1=1 --", "alex@larkspur.example' --", "%", "*@*"])
 def test_sql_injection_in_sign_in_finds_no_account(client, db, email):
@@ -135,6 +141,7 @@ def test_a_document_cannot_close_its_source_tag():
 
 
 # --- Serving uploaded files back -------------------------------------------------------------
+
 
 def _upload(client, name, content):
     return client.post("/api/documents", files={"file": (name, content)}).json()["document"]["id"]
@@ -180,6 +187,7 @@ def test_a_filename_cannot_inject_response_headers(client, db):
 
 # --- Malformed requests ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("kwargs", "status"),
     [
@@ -201,7 +209,9 @@ def test_malformed_chat_requests_are_rejected_before_any_work(client, db, kwargs
 def test_malformed_ids_are_rejected(client, db, path):
     sign_in_as(client, db, "admin")
     method = client.patch if path.startswith(("/api/tickets", "/api/users")) else client.get
-    kwargs = {"json": {"status": "closed"}} if "tickets" in path else {"json": {"role": "admin"}} if "users" in path else {}
+    kwargs = (
+        {"json": {"status": "closed"}} if "tickets" in path else {"json": {"role": "admin"}} if "users" in path else {}
+    )
     assert method(path, **kwargs).status_code in (404, 422)
 
 

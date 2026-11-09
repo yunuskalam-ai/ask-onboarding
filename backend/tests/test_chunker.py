@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import pytest
 
 from app.ingest.chunker import chunk_pages, chunk_spans
@@ -33,7 +35,7 @@ def test_every_word_of_every_page_is_in_some_chunk(sample_docs):
                 if chunk.page == page.number:
                     for i in range(chunk.start_char, chunk.end_char):
                         covered[i] = True
-            missed = [c for c, hit in zip(page.text, covered) if not hit and not c.isspace()]
+            missed = [c for c, hit in zip(page.text, covered, strict=True) if not hit and not c.isspace()]
             assert missed == [], name
 
 
@@ -42,7 +44,7 @@ def test_neighbouring_chunks_overlap():
     spans = chunk_spans(text, SIZE, OVERLAP)
 
     assert len(spans) >= 3
-    for (_, prev_end), (next_start, _) in zip(spans, spans[1:]):
+    for (_, prev_end), (next_start, _) in pairwise(spans):
         assert next_start < prev_end  # they share text
         assert prev_end - next_start <= OVERLAP
 

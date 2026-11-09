@@ -43,6 +43,7 @@ def _events(question, retrieval, llm, history=None):
 
 # --- Prompt helpers ---------------------------------------------------------
 
+
 def test_sources_are_numbered_with_file_and_page():
     message = build_user_message("Q?", [_hit(1, "a.md"), _hit(2, "b.pdf", page=3)])
 
@@ -64,7 +65,12 @@ def test_cited_hits_keeps_order_and_ignores_unknown_numbers():
 
 @pytest.mark.parametrize(
     "text",
-    [NO_ANSWER, "  I couldn't find this in the company documents  ", "I couldn’t find this in the company documents", "i couldnt find this in the company documents."],
+    [
+        NO_ANSWER,
+        "  I couldn't find this in the company documents  ",
+        "I couldn\u2019t find this in the company documents",  # typographic apostrophe
+        "i couldnt find this in the company documents.",
+    ],
 )
 def test_refusal_sentence_is_detected_with_small_variations(text):
     assert is_no_answer(text)
@@ -101,6 +107,7 @@ def test_strip_citations():
 
 
 # --- answer_events ------------------------------------------------------------
+
 
 def test_low_score_answers_no_without_calling_the_llm():
     llm = FakeLLM("should not be called")
@@ -178,6 +185,7 @@ def test_history_is_trimmed_starts_with_user_and_drops_old_citations():
 
 # --- With real retrieval -----------------------------------------------------
 
+
 def test_off_topic_question_never_reaches_the_llm(indexed):
     llm = FakeLLM("should not be called")
     retrieval = retrieve(indexed, "Who won the football world cup in 2022?")
@@ -200,6 +208,7 @@ def test_on_topic_question_sends_the_right_document_to_the_llm(indexed):
 
 
 # --- API (Server-Sent Events) ------------------------------------------------
+
 
 def _parse_sse(body: str) -> list[tuple[str, dict]]:
     events = []

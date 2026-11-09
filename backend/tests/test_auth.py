@@ -23,6 +23,7 @@ def _audit(db) -> list[str]:
 
 # --- Signing in and out ------------------------------------------------------
 
+
 def test_demo_accounts_are_seeded_once(db):
     assert seed_demo_users(db) == len(DEMO_USERS)
     assert seed_demo_users(db) == 0  # never re-added, so role changes stick
@@ -89,6 +90,7 @@ def test_made_up_session_tokens_are_refused(client, db):
 
 # --- Everything except health and sign-in needs a session --------------------
 
+
 @pytest.mark.parametrize(
     ("method", "path"),
     [
@@ -116,6 +118,7 @@ def test_health_and_the_account_list_need_no_session(client):
 
 
 # --- Roles ---------------------------------------------------------------------
+
 
 def _upload(client):
     return client.post("/api/documents", files={"file": ("note.md", b"# Note\n\nHello.")})
@@ -164,6 +167,7 @@ def test_the_ticket_owner_comes_from_the_session_not_the_request(client, db):
 
 
 # --- Changing roles --------------------------------------------------------------
+
 
 def test_admin_changes_a_role_and_it_applies_at_once(client, db):
     employee = add_user(db, "employee", "Sam")

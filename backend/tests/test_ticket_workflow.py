@@ -88,7 +88,11 @@ def test_a_change_that_changes_nothing_is_refused(client, db, ticket):
 
 @pytest.mark.parametrize(
     ("ticket_id", "body", "status"),
-    [(999, {"status": "closed"}, 404), (None, {"status": "done"}, 422), (None, {"status": "closed", "note": "x" * 1001}, 422)],
+    [
+        (999, {"status": "closed"}, 404),
+        (None, {"status": "done"}, 422),
+        (None, {"status": "closed", "note": "x" * 1001}, 422),
+    ],
 )
 def test_bad_changes_are_rejected(client, db, ticket, ticket_id, body, status):
     sign_in_as(client, db, "manager")
