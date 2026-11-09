@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with the admin Overview). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with notifications). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **304 passed**, 0 failed |
-| Backend coverage | pytest-cov, branches included | **97.6%** (the build fails below 95%) |
-| Frontend tests | vitest | **56 passed**, 0 failed |
+| Backend tests | pytest | **336 passed**, 0 failed |
+| Backend coverage | pytest-cov, branches included | **97.3%** (the build fails below 95%) |
+| Frontend tests | vitest | **66 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 29 files |
+| Python types | mypy | 0 errors in 31 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -76,6 +76,8 @@ Mistakes the checks caught during this work:
 - **Questions just after midnight were counted on the previous day** for anyone not in UTC. Days were grouped in UTC, and the browser also read `"2026-11-09"` as UTC midnight. Caught by **looking at a screenshot** of the Overview: the chart said 9 Nov, the question log said 10 Nov. Fixed both sides, with tests for three time zones.
 - **A too-long line was committed** because only part of the checks had run. Caught before pushing. Since then, `scripts/check.sh` runs every CI check in one command.
 - **Invisible no-break-space characters ended up in source files** through a shell-escaping slip. Caught by oxlint (`no-irregular-whitespace`); replaced with visible `\u00a0` escapes, and the source tree was scanned for any others.
+- **A CSS class-name collision:** the notification icon used the class `ticket`, which already styles the ticket-offer box in the chat. Icons rendered off-centre. No test fails on that; a **screenshot** showed it, and the icon classes got their own names.
+- **A test file took 4 minutes,** because one test made 105 real connection attempts to a database that isn't there. It now simulates the outage (the file runs in about 30 s), and two other tests still check the real connection path.
 - **A test ran against the developer's real database.** It forgot the test-database fixture, and passed locally because that database had the tables. **CI caught it,** because its database is empty. Fixed, plus a guard in [conftest.py](backend/tests/conftest.py): during tests, the app's database dependency points at an error until a test explicitly chooses the test database. With the guard, the same slip fails locally with a clear message.
 
 ## Negative and security tests
@@ -180,6 +182,24 @@ Expected result means the server's answer. Every test listed passed in the run a
 | A crash inside the answer stream | still logged | `test_a_crash_inside_the_stream_is_still_logged` |
 | An actor deleted after acting | the audit entry stays, as "Deleted user" | `test_the_audit_log_names_the_actor_and_survives_their_deletion` |
 
+### Notifications ([test_notifications.py](backend/tests/test_notifications.py))
+
+| Attempt | Expected | Test |
+| --- | --- | --- |
+| An employee's ticket gets an update | the owner and all staff are told; **other employees never are**; the person who made the change isn't told about it | `test_a_status_change_notifies_the_owner_and_staff_but_not_the_actor` |
+| A new ticket | every manager and admin, not its author, no other employee | `test_a_new_ticket_notifies_every_manager_and_admin_but_not_its_author` |
+| Reading or marking someone else's notification, or one that doesn't exist | 404 either way, so nobody can probe which exist | `test_someone_elses_notification_cannot_be_read_or_marked` |
+| A cross-site "mark all as read" | 403, nothing changed | `test_cross_site_mark_all_read_is_blocked` |
+| Saving the notifications fails during a ticket change | the whole change rolls back: no half-saved ticket | `test_a_ticket_change_and_its_notifications_are_saved_together_or_not_at_all` |
+| System alerts | admins only | `test_alerts_go_to_admins_only` |
+| The same failure repeated, or 8 failures **at the same moment** | one alert per 10 minutes (a database lock stops simultaneous duplicates) | `test_the_same_problem_alerts_once_per_window`, `test_simultaneous_failures_still_alert_once` |
+| The database is down when an alert is raised | no crash; the alert waits in memory and is delivered when the database is back | `test_alerts_wait_while_the_database_is_down_and_arrive_after`, `test_the_delivery_loop_retries_until_stopped` |
+| A long outage | the waiting queue is capped (100) and drops the oldest first | `test_the_waiting_queue_is_bounded` |
+| An unexpected server error | a plain 500 with no internals; admins alerted with the endpoint and error type | `test_an_unexpected_error_gives_a_plain_500_and_alerts_admins` |
+| Bad paging (`limit` 0 or 101, `before` 0 or `abc`), signed out | 422 / 401 | `test_bad_paging_is_rejected`, `test_signed_out_gets_401` |
+
+Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it with a note. Then **the model was stopped** and a question asked. Sam was told about his own ticket only; Jordan about the new ticket only; Alex about both, plus a red "The answer model failed" alert. In headless Edge, clicking Sam's notification opened `/tickets#ticket-6`, with the ticket highlighted and the badge cleared.
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -222,10 +242,10 @@ From `pytest --cov` (statements and branches):
 
 | Module | Coverage | Not covered |
 | --- | --- | --- |
-| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/api/admin.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
+| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
 | `app/api/tickets.py` | 99% | the default ticket-drafter getter (replaced in tests) |
 | `app/api/auth.py`, `app/startup.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py` | 96–98% | default dependency getters, one log-only branch |
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.6%** | |
+| **Total** | **97.3%** | |
