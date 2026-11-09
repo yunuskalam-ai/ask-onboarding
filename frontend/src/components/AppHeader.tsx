@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ROLE_LABEL, initials, isAdmin, useAuth } from "../session";
 import { THEMES, applyTheme, savedTheme, type Theme } from "../theme";
+import NotificationBell from "./NotificationBell";
 
 const THEME_ICON: Record<Theme, string> = { light: "☀", dark: "☾", system: "◐" };
 const THEME_LABEL: Record<Theme, string> = { light: "Light", dark: "Dark", system: "System" };
@@ -103,6 +104,7 @@ export default function AppHeader() {
       )}
       <div className="topbar-end">
         <ThemeSwitch />
+        {user && <NotificationBell key={user.id} />}
         {user ? (
           <UserMenu />
         ) : (

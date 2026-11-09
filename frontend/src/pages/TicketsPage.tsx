@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import { ApiError, changeTicketStatus, listTickets, type Ticket, type TicketStatus } from "../api";
 import { isStaff, useAuth } from "../session";
 
@@ -106,6 +107,13 @@ export default function TicketsPage() {
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [filter, setFilter] = useState<Filter>("all");
+  const { hash } = useLocation(); // e.g. #ticket-7, from a notification
+
+  // Once the tickets are on screen, bring the one a notification pointed at into view.
+  useEffect(() => {
+    if (!tickets || !hash.startsWith("#ticket-")) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [tickets, hash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,7 +185,7 @@ export default function TicketsPage() {
 
           <ul className="tickets">
             {shown.map((t) => (
-              <li key={t.id}>
+              <li key={t.id} id={`ticket-${t.id}`} className={hash === `#ticket-${t.id}` ? "linked" : ""}>
                 <div className="ticket-head">
                   <strong>
                     #{t.id} {t.title}

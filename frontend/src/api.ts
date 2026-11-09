@@ -265,3 +265,26 @@ export const listQuestions = (limit: number, offset: number) =>
 
 export const listAudit = (limit: number, offset: number) =>
   getJson<AuditEntry[]>(`/api/admin/audit?limit=${limit}&offset=${offset}`);
+
+// --- Notifications ---------------------------------------------------------------------
+
+export type Notification = {
+  id: number;
+  at: string;
+  kind: "ticket.opened" | "ticket.updated" | "system.alert";
+  severity: "info" | "warning" | "error";
+  title: string;
+  body: string;
+  link: string | null; // an in-app path
+  read: boolean;
+};
+
+/** Newest first; `before` pages to older ones. */
+export const listNotifications = (before?: number) =>
+  getJson<{ items: Notification[]; unread: number }>(`/api/notifications?limit=20${before ? `&before=${before}` : ""}`);
+
+export const unreadNotifications = () => getJson<{ unread: number }>("/api/notifications/unread");
+
+export const markNotificationRead = (id: number) => sendJson<void>("POST", `/api/notifications/${id}/read`, {});
+
+export const markAllNotificationsRead = () => sendJson<void>("POST", "/api/notifications/read-all", {});
