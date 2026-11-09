@@ -8,6 +8,15 @@ Everything runs locally. No API key is needed.
 
 **Live demo:** https://34-18-56-53.sslip.io. It's password-protected; ask the author for the login. It runs on a 4-CPU Google Cloud server without a GPU, so answers take about 10–20 s. It's set up with [deploy/README.md](deploy/README.md).
 
+## Phase 1 and Phase 2
+
+| | What it covers |
+| --- | --- |
+| **Phase 1: the take-home brief** | Upload PDF, Markdown and text; streamed answers with exact, clickable citations; an honest "not in the documents"; a help-desk ticket drafted by a model tool call and confirmed by a person; `docker compose up` as the only setup step; a 20-question evaluation; hybrid search |
+| **Phase 2: refinements** | Home page; sign-in with employee, manager and admin roles enforced by the server; ticket statuses, notes and history; notifications and admin system alerts; admin Overview (KPIs, question log, gaps in the documents, audit log); People and Docs pages; light and dark themes; a typing indicator; security hardening; CI with a 95% coverage floor; a public deployment |
+
+[GUIDE.md](GUIDE.md) walks through every feature in plain language.
+
 ## What it looks like
 
 | Chat | No answer → help-desk ticket |
@@ -65,7 +74,7 @@ python -m venv .venv
 .venv/Scripts/python -m pytest
 ```
 
-Frontend tests (stream parser and answer rendering):
+Frontend tests:
 
 ```bash
 cd frontend
@@ -73,18 +82,22 @@ npm ci
 npm test
 ```
 
+**Everything CI checks, in one command** (lint, types, all tests with a 95% coverage floor, docs links, the production build): `bash scripts/check.sh`. What the tests cover, including every negative and security test and its result, is in [TESTING.md](TESTING.md).
+
 ## Project layout
 
 | Path | Contents |
 | --- | --- |
-| `backend/app/` | FastAPI app: ingestion, retrieval, chat, tickets |
+| `backend/app/` | FastAPI app: ingestion, retrieval, chat, tickets, sign-in and roles, notifications, admin overview (see [TECHNICAL.md](TECHNICAL.md#1-repository-layout)) |
 | `backend/tests/` | pytest tests |
-| `frontend/` | React app: Upload, Chat and Tickets pages |
+| `frontend/` | React app: Home, Chat, Documents, Tickets, plus Overview, People and Docs for admins |
 | `eval/` | 20-question evaluation set and scoring script |
 | `sample_docs/` | Sample company documents, loaded on first start |
-| `scripts/` | Helper scripts, such as the generator for the sample PDFs |
+| `scripts/` | `check.sh` (every CI check), `check_links.py` (docs links), the sample-PDF generator |
 | `db/init.sql` | Enables the pgvector extension |
 | `deploy/` | Public deployment: HTTPS and password (Caddy), production compose override, setup script |
+| `docs/` | Screenshots and the architecture diagram |
+| `.github/workflows/` | CI |
 
 ## Sample data
 
@@ -140,16 +153,19 @@ It uses a separate `ask_onboarding_eval` database and writes full results to `ev
 - **Slow answers on a CPU.** The first word takes about 8–15 s with `qwen2.5:3b`, and about 30 s for the first question after Ollama restarts (the model reloads). That misses the 2-second target, which assumed a hosted model. A GPU, a hosted model, or `LLM_PROVIDER=anthropic` fixes it. See [ARCHITECTURE.md](ARCHITECTURE.md#3-scaling-to-5000-employees-200000-documents-and-20000-questions-per-day).
 - **The 3B model's mistakes.** It sometimes leaves out the `[n]` citation (the UI then says "This answer did not cite a source"). Occasionally it writes "[1]" where a number should be.
 - **Follow-up questions.** Earlier turns are sent to the model, but retrieval uses only the current question. So "What about Manchester?" may miss the right document.
-- **No login or permissions.** Everyone sees every document, and a ticket's "user" is a name typed into a field.
+- **Demo sign-in.** You pick an account; there are no passwords. Roles, sessions and permissions are real, but company SSO would replace the sign-in step. Every signed-in person can read every document (no per-document permissions).
 - **Uploads only.** There is no Google Drive or Confluence sync. Scanned PDFs without a text layer are rejected (no OCR).
 - **English only.** Both the embedding model and the full-text search are English.
 - **Chat history lives in the page.** Reloading the page clears the conversation, though tickets are saved.
-- **No delete in the UI.** Documents can be replaced by uploading the same filename, but not removed. Tickets have no workflow beyond `open`.
+- **No delete in the UI.** Documents can be replaced by uploading the same filename, but not removed.
 - **Built for one machine.** Original files are stored in Postgres, the API runs one process and opens one connection per request, and ingestion runs inside the API. [ARCHITECTURE.md](ARCHITECTURE.md) covers what changes at company scale.
 - **A small evaluation set.** 20 questions, so one question moves accuracy by about 6 points.
 
 ## Docs
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): how a question flows through the system, the choices and what didn't work, scaling, failure modes, quality and RAG vs. fine-tuning
+- [GUIDE.md](GUIDE.md): every feature in plain language, for business owners and non-technical readers
+- [ARCHITECTURE.md](ARCHITECTURE.md): the brief's six questions: how a question flows through the system, the choices and what didn't work, scaling, failure modes, quality and RAG vs. fine-tuning
+- [TECHNICAL.md](TECHNICAL.md): the complete technical reference: every component, table, endpoint, security control and setting
+- [deploy/README.md](deploy/README.md): deploying to a server
 - [TESTING.md](TESTING.md): test strategy, the negative and security tests with their results, coverage, and what isn't covered
 - [AI_LOG.md](AI_LOG.md): how AI tools were used to build this
