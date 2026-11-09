@@ -21,6 +21,9 @@ step "Backend: types (mypy)"
 step "Backend: tests with a 95% coverage floor"
 (cd backend && "../$BIN/python" -m pytest -q --cov --cov-fail-under=95)
 
+step "Docs: every relative link and #anchor resolves"
+python scripts/check_links.py
+
 step "Frontend: lint (oxlint, warnings fail)"
 (cd frontend && npx oxlint --deny-warnings)
 step "Frontend: tests (vitest)"

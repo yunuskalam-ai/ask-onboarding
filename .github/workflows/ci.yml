@@ -59,6 +59,9 @@ jobs:
         run: pytest -q --cov --cov-report=term --cov-fail-under=95
       - name: Known vulnerabilities in dependencies
         run: pip-audit --progress-spinner off
+      - name: Docs links and anchors resolve
+        working-directory: .
+        run: python scripts/check_links.py
 
   frontend:
     name: Frontend (types, lint, tests, build, audit)
