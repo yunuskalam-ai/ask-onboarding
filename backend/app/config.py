@@ -47,6 +47,7 @@ class Settings:
     max_upload_mb: int
     seed_sample_docs: bool  # load sample_docs/ on first start, into an empty database only
     sample_docs_dir: str
+    project_dir: str  # where README.md, ARCHITECTURE.md and docs/ are (the repo root)
     llm_provider: str  # "ollama" (default, local) or "anthropic"
     ollama_url: str
     ollama_model: str
@@ -72,6 +73,7 @@ def load_settings() -> Settings:
         max_upload_mb=int(env("MAX_UPLOAD_MB", "20")),
         seed_sample_docs=env("SEED_SAMPLE_DOCS", "true").lower() in ("1", "true", "yes"),
         sample_docs_dir=env("SAMPLE_DOCS_DIR", str(_ROOT / "sample_docs")),
+        project_dir=env("PROJECT_DIR", str(_ROOT)),
         llm_provider=_choice("LLM_PROVIDER", "ollama", ("ollama", "anthropic")),
         ollama_url=_http_url("OLLAMA_URL", "http://localhost:11434"),
         ollama_model=env("OLLAMA_MODEL", "qwen2.5:3b"),

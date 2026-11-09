@@ -20,7 +20,9 @@ services:
       retries: 10
 
   api:
-    build: ./backend
+    build:
+      context: . # the repo root, so the image can include the project docs
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     env_file:
       - path: .env

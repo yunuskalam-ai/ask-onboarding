@@ -1,0 +1,19 @@
+# The API image is built from the repo root (docker-compose.yml), so ignore
+# everything except what backend/Dockerfile copies.
+*
+!backend/
+!README.md
+!ARCHITECTURE.md
+!TECHNICAL.md
+!GUIDE.md
+!TESTING.md
+!AI_LOG.md
+!deploy/README.md
+!docs/
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.coverage
