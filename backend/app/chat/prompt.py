@@ -7,6 +7,7 @@ Two "no answer" guards work together:
    can offer a help-desk ticket.
 """
 
+import html
 import re
 
 from app.retrieval.search import Hit
@@ -34,7 +35,8 @@ def build_user_message(question: str, hits: list[Hit]) -> str:
         page = f' page="{hit.page}"' if hit.page is not None else ""
         # A document must not be able to close its own tag and pose as the prompt.
         text = hit.text.replace("</source>", "</ source>")
-        blocks.append(f'<source id="{n}" file="{hit.filename}"{page}>\n{text}\n</source>')
+        filename = html.escape(hit.filename, quote=True)  # a name can't break out of file="..."
+        blocks.append(f'<source id="{n}" file="{filename}"{page}>\n{text}\n</source>')
     sources = "\n".join(blocks)
     return f"<sources>\n{sources}\n</sources>\n\nQuestion: {question}"
 

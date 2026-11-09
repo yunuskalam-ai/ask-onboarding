@@ -108,8 +108,16 @@ def get_document_file(document_id: int, user: SignedIn, conn: Conn) -> Response:
     return Response(
         content=bytes(row["original"]),
         media_type=_MEDIA_TYPES[row["file_type"]],
-        # inline: show in the browser instead of downloading
-        headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(row['filename'])}"},
+        headers={
+            # inline: show in the browser instead of downloading
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(row['filename'])}",
+            # Never guess the type: a .txt containing HTML stays plain text.
+            "X-Content-Type-Options": "nosniff",
+            # Text files: even if a browser rendered one as a page, it could run
+            # no script and reach no cookie. (Not for PDFs: Chrome refuses to show
+            # a sandboxed PDF, and its viewer already isolates PDF scripts.)
+            **({} if row["file_type"] == "pdf" else {"Content-Security-Policy": "sandbox; default-src 'none'"}),
+        },
     )
 
 
