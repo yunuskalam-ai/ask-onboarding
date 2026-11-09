@@ -449,3 +449,32 @@ ul.tickets li.linked { border-color: var(--accent); box-shadow: 0 0 0 2px color-
   .docs-nav { position: static; min-height: 0; border-right: none; border-bottom: 1px solid var(--border); }
   .docs-body { padding: 1rem; }
 }
+
+/* --- People management --- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 0.75rem; }
+.toolbar input[type="search"] { flex: 1; min-width: 200px; padding: 0.4rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.checkbox { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+tr.inactive td { opacity: 0.6; }
+.status-toggle { border: 1px solid var(--border); background: var(--bg); color: var(--muted); border-radius: 999px; padding: 0.2rem 0.7rem; cursor: pointer; font-size: 0.85rem; }
+.status-toggle.active { color: var(--ready); border-color: var(--ready); }
+.status-toggle:disabled { cursor: not-allowed; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.7rem; }
+.person-form label, .form-grid label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.person-form input, .inline-form input { font-weight: 400; color: var(--text); padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.person-form .actions { margin-top: 0.8rem; }
+.person-form button, .inline-form button { padding: 0.45rem 1rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
+.person-form button:disabled, .inline-form button:disabled { opacity: 0.5; cursor: default; }
+.inline-form { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.inline-form input { flex: 1; min-width: 0; }
+.inline-form button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
+.departments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.departments li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+.departments li .inline-form { margin: 0; flex: 1; }
+.row-actions { display: flex; gap: 0.8rem; }
+button.link.danger { color: var(--failed); }
+button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration: none; }
+.tree, .tree ul { list-style: none; margin: 0; padding-left: 1.2rem; }
+.tree { padding-left: 0; }
+.tree li { position: relative; padding: 0.25rem 0 0.25rem 0.9rem; border-left: 1px solid var(--border); }
+.tree li::before { content: ""; position: absolute; left: 0; top: 0.95rem; width: 0.7rem; border-top: 1px solid var(--border); }
+.tree .role-pill { margin-left: 0.2rem; }

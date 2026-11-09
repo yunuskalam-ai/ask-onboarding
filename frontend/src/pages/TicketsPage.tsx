@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { ApiError, changeTicketStatus, listTickets, type Ticket, type TicketStatus } from "../api";
-import { isStaff, useAuth } from "../session";
+import { isAdmin, isStaff, useAuth } from "../session";
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
@@ -148,11 +148,13 @@ export default function TicketsPage() {
 
   return (
     <section className="page">
-      <h1>{everyone ? "All tickets" : "My tickets"}</h1>
+      <h1>{isAdmin(user) ? "All tickets" : everyone ? "Team tickets" : "My tickets"}</h1>
       <p className="muted">
-        {everyone
+        {isAdmin(user)
           ? "Questions the documents could not answer, from everyone. Move each one along and leave a note: the person who asked sees it."
-          : "Questions you asked that the documents could not answer. The help desk's notes appear here."}
+          : everyone
+            ? "Your own questions, and your team's: everyone who reports to you, directly or further down. Move your team's along and leave a note."
+            : "Questions you asked that the documents could not answer. Replies appear here."}
       </p>
 
       {error && (
@@ -198,7 +200,11 @@ export default function TicketsPage() {
                 <p className="asked">“{t.question}”</p>
                 {t.summary && <p>{t.summary}</p>}
                 <History ticket={t} />
-                {everyone && <StatusForm key={t.updated_at} ticket={t} onSaved={replace} />}
+                {isAdmin(user) || (everyone && t.created_by !== user?.id) ? (
+                  <StatusForm key={t.updated_at} ticket={t} onSaved={replace} />
+                ) : (
+                  everyone && <p className="muted small">Your own ticket: your manager or an admin handles it.</p>
+                )}
               </li>
             ))}
           </ul>
