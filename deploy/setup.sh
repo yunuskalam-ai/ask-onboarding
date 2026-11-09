@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup of Ask Onboarding on a fresh Ubuntu 24.04 server (Google
+# One-time setup of Ask Onboarding on a fresh Ubuntu server (24.04+, Google
 # Cloud, Oracle Cloud, or any other). Run it from the repo folder:
 #
 #   bash deploy/setup.sh
@@ -12,14 +12,33 @@ cd "$(dirname "$0")/.."
 
 CADDY_IMAGE=caddy:2.10.2-alpine
 
-echo "==> 1/4 Opening ports 80 and 443 in the server's firewall"
-# Oracle's Ubuntu images reject every incoming port except SSH (22).
-for port in 80 443; do
-    sudo iptables -C INPUT -p tcp --dport "$port" -m state --state NEW -j ACCEPT 2>/dev/null \
-        || sudo iptables -I INPUT 1 -p tcp --dport "$port" -m state --state NEW -j ACCEPT
+# Minimal cloud images (such as Google's Ubuntu 26.04) leave out tools this
+# script uses. Docker also needs iptables: without it the Docker service is
+# installed but can't start ("failed to create NAT chain DOCKER").
+# Checked through sudo, whose PATH is the one that matters here.
+missing=""
+for tool in curl openssl iptables; do
+    sudo sh -c "command -v $tool" >/dev/null 2>&1 || missing="$missing $tool"
 done
-if command -v netfilter-persistent >/dev/null; then
-    sudo netfilter-persistent save >/dev/null # keep the rules after a reboot
+if [ -n "$missing" ]; then
+    echo "==> Installing$missing"
+    sudo apt-get update -qq && sudo apt-get install -y -qq $missing
+fi
+
+echo "==> 1/4 Opening ports 80 and 443 in the server's firewall"
+# Oracle's Ubuntu images reject every incoming port except SSH (22) in the
+# server's own firewall. Google leaves it open and filters in the cloud
+# console instead, and its minimal images have no iptables at all.
+if sudo sh -c 'command -v iptables' >/dev/null 2>&1; then
+    for port in 80 443; do
+        sudo iptables -C INPUT -p tcp --dport "$port" -m state --state NEW -j ACCEPT 2>/dev/null \
+            || sudo iptables -I INPUT 1 -p tcp --dport "$port" -m state --state NEW -j ACCEPT
+    done
+    if command -v netfilter-persistent >/dev/null; then
+        sudo netfilter-persistent save >/dev/null # keep the rules after a reboot
+    fi
+else
+    echo "    No server firewall to change (normal on Google Cloud)"
 fi
 
 echo "==> 2/4 Installing Docker"

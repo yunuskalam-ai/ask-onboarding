@@ -64,12 +64,13 @@ Oracle can stop Always Free servers that stay almost idle for 7 days. Pay As You
 On the server:
 
 ```bash
+sudo apt-get update && sudo apt-get install -y git   # minimal images don't include git
 git clone https://github.com/yunuskalam-ai/ask-onboarding.git
 cd ask-onboarding
 bash deploy/setup.sh
 ```
 
-The script ([setup.sh](setup.sh)) does four things:
+The script ([setup.sh](setup.sh)) first installs anything else a minimal image leaves out (`curl`, `openssl`, and `iptables`, which Docker needs). Then it does four things:
 1. **Opens ports 80 and 443 in the server's own firewall.** Oracle needs this; on Google it changes nothing.
 2. **Installs Docker.**
 3. **Asks for a username and password for the site** and writes `.env`. It stores only a hash of the password, and a random database password.
