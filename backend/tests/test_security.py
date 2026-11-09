@@ -112,9 +112,9 @@ def test_junk_session_cookies_are_refused(client, token):  # client: points the 
 # --- Injection ----------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("email", ["' OR 1=1 --", "alex@larkspur.example' --", "%", "*@*"])
+@pytest.mark.parametrize("email", ["' OR 1=1 --", "alex@yklabs.example' --", "%", "*@*"])
 def test_sql_injection_in_sign_in_finds_no_account(client, db, email):
-    add_user(db, "admin", email="alex@larkspur.example")
+    add_user(db, "admin", email="alex@yklabs.example")
     response = client.post("/api/auth/sign-in", json={"email": email})
     assert response.status_code in (404, 422)
     assert SESSION_COOKIE not in client.cookies

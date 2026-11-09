@@ -1,6 +1,6 @@
 # Remote and Hybrid Work Policy
 
-Larkspur Labs is a hybrid company. Most people work from an office **2 days a week** and from home the rest of the time.
+YK Labs is a hybrid company. Most people work from an office **2 days a week** and from home the rest of the time.
 
 ## Anchor days
 

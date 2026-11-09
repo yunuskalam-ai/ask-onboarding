@@ -4,7 +4,7 @@ Routewise runs 24/7 for customers planning early-morning deliveries, so we keep 
 
 ## Joining the rotation
 
-- Engineers join the on-call rotation after **3 months** at Larkspur Labs.
+- Engineers join the on-call rotation after **3 months** at YK Labs.
 - Before your first shift, shadow one full week with an experienced engineer.
 - Rotations are **one week long**. Handover is every **Monday at 10:00 UK time** in #eng-oncall.
 - Swaps are fine: agree with a colleague and update the PagerDuty schedule yourself.

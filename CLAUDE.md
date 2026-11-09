@@ -16,7 +16,7 @@ A RAG take-home (employee Q&A over company docs) extended in Phase 2. Start with
 - Stack: `docker compose up -d --build api web`; app at http://localhost:8080, API at :8000.
 - Backend tests: `cd backend && .venv/Scripts/python -m pytest -q` (needs `docker compose up -d db`; uses a separate `_test` database).
 - Frontend: `cd frontend && npx tsc -b && npx oxlint --deny-warnings && npx vitest run`.
-- Sign in for API checks: `curl -c /tmp/x.txt -H "Content-Type: application/json" -d '{"email":"alex@larkspur.example"}' localhost:8080/api/auth/sign-in`.
+- Sign in for API checks: `curl -c /tmp/x.txt -H "Content-Type: application/json" -d '{"email":"alex@yklabs.example"}' localhost:8080/api/auth/sign-in`.
 
 ## Gotchas (each cost time once)
 - **Backslashes in shell commands are eaten** by the harness. In Python scripts, build them with `chr(92)`; prefer writing scripts to a file.

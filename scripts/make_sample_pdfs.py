@@ -20,12 +20,12 @@ OUT_DIR = Path(__file__).resolve().parent.parent / "sample_docs"
 # Latin-1, so the text avoids curly quotes and long dashes.
 DOCUMENTS = {
     "handbook-code-of-conduct.pdf": (
-        "Larkspur Labs Employee Handbook: Code of Conduct",
+        "YK Labs Employee Handbook: Code of Conduct",
         [
             (
                 "1. Our values",
                 [
-                    "This Code of Conduct applies to everyone who works at or for Larkspur Labs: "
+                    "This Code of Conduct applies to everyone who works at or for YK Labs: "
                     "employees, contractors and interns. Read it in your first week and confirm "
                     "in PeopleHub that you have read it.",
                     "Our four values are: Customers first, Own the outcome, Be straightforward, "
@@ -45,7 +45,7 @@ DOCUMENTS = {
                     "Slack, at client sites and at company events, including social events "
                     "after work.",
                     "If you experience or see harassment, tell your manager, the People team "
-                    "(people@larkspur.example) or use the confidential Ethics Line described in "
+                    "(people@yklabs.example) or use the confidential Ethics Line described in "
                     "section 4. Complaints are investigated within 10 working days.",
                 ],
             ),
@@ -61,7 +61,7 @@ DOCUMENTS = {
                     "Gift Register in Notion within 5 working days. Never accept cash or gifts "
                     "from a supplier during a tender.",
                     "Outside work: you may take on a second job or side project if it does not "
-                    "compete with Larkspur Labs, use company time or equipment, or affect your "
+                    "compete with YK Labs, use company time or equipment, or affect your "
                     "work. Ask your manager for approval in writing first.",
                 ],
             ),
@@ -73,7 +73,7 @@ DOCUMENTS = {
                     "team or the Legal team.",
                     "Ethics Line: if you prefer to stay anonymous, use the Ethics Line, an "
                     "independent service run by an outside company. It is open 24 hours a day "
-                    "by phone or web form; the details are pinned in #people-help. Larkspur Labs "
+                    "by phone or web form; the details are pinned in #people-help. YK Labs "
                     "will never punish anyone for raising a concern in good faith.",
                     "Breaches of this Code are handled through the disciplinary process. The "
                     "steps are an investigation, a disciplinary meeting where you may bring a "
@@ -85,12 +85,12 @@ DOCUMENTS = {
         ],
     ),
     "handbook-performance-reviews.pdf": (
-        "Larkspur Labs: Performance Reviews and Promotions",
+        "YK Labs: Performance Reviews and Promotions",
         [
             (
                 "1. The review cycle",
                 [
-                    "Larkspur Labs runs performance reviews twice a year, in April and in "
+                    "YK Labs runs performance reviews twice a year, in April and in "
                     "October. Each cycle takes about four weeks from self-review to the final "
                     "conversation with your manager.",
                     "Reviews happen in PeopleHub. Employees still in probation take part in "
@@ -144,7 +144,7 @@ class HandbookPDF(FPDF):
 def build(filename: str, title: str, pages: list[tuple[str, list[str]]]) -> None:
     pdf = HandbookPDF()
     pdf.set_title(title)
-    pdf.set_author("Larkspur Labs People team")
+    pdf.set_author("YK Labs People team")
     pdf.set_margins(20, 20, 20)
     for i, (heading, paragraphs) in enumerate(pages):
         pdf.add_page()

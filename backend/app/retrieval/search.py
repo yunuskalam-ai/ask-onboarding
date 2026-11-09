@@ -6,7 +6,7 @@ Two search modes (SEARCH_MODE):
           Good at meaning: "holiday" finds "annual leave".
   hybrid  vector search AND keyword search (Postgres full-text), merged
           with Reciprocal Rank Fusion. Keywords help with exact terms
-          that embeddings blur: room names, "parking", "Larkspur-Guest".
+          that embeddings blur: room names, "parking", "YKLabs-Guest".
 
 Reciprocal Rank Fusion: each search returns its own top RRF_CANDIDATES.
 A chunk scores 1 / (RRF_K + rank) in each list it appears in, and the

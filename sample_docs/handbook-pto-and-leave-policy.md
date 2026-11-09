@@ -38,6 +38,6 @@ You can carry over up to **5 unused days** into the next year. Carried-over days
 ## Other leave
 
 - **Compassionate leave:** up to 5 days paid for the death of a close family member, and up to 2 days for other family members. Talk to your manager; no paperwork is needed.
-- **Jury service:** paid at full salary. Send your summons to people@larkspur.example.
+- **Jury service:** paid at full salary. Send your summons to people@yklabs.example.
 - **Volunteering:** 2 paid volunteering days per year for a registered charity.
 - **Moving house:** 1 paid day per year.

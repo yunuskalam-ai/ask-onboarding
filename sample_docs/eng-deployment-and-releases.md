@@ -26,7 +26,7 @@ We use **trunk-based development**. `main` is always deployable, and we deploy s
 
 ## Feature flags
 
-Ship unfinished or risky features behind a feature flag. Flags are managed in the **Flags** service (flags.larkspur.example). Every flag needs an owner and an expiry date. Remove flags within **30 days** of a feature reaching 100% of customers.
+Ship unfinished or risky features behind a feature flag. Flags are managed in the **Flags** service (flags.yklabs.example). Every flag needs an owner and an expiry date. Remove flags within **30 days** of a feature reaching 100% of customers.
 
 ## Database migrations
 

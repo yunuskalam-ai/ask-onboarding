@@ -1,6 +1,6 @@
-# Welcome to Larkspur Labs
+# Welcome to YK Labs
 
-Larkspur Labs builds Routewise, scheduling software that helps logistics companies plan deliveries. We are about 300 people across our London head office, our Manchester office and remote staff in the UK.
+YK Labs builds Routewise, scheduling software that helps logistics companies plan deliveries. We are about 300 people across our London head office, our Manchester office and remote staff in the UK.
 
 ## Your first day
 
@@ -30,8 +30,8 @@ Your manager holds check-ins at **30, 60 and 90 days**. Most roles have a **prob
 
 | Topic | Where to go |
 | --- | --- |
-| Laptop, accounts, passwords | #it-help on Slack or it-help@larkspur.example |
-| Pay, payslips, tax codes | payroll@larkspur.example |
-| Leave, benefits, contracts | people@larkspur.example |
-| Office access, keycards, desks | office@larkspur.example |
-| Security concerns or phishing | security@larkspur.example |
+| Laptop, accounts, passwords | #it-help on Slack or it-help@yklabs.example |
+| Pay, payslips, tax codes | payroll@yklabs.example |
+| Leave, benefits, contracts | people@yklabs.example |
+| Office access, keycards, desks | office@yklabs.example |
+| Security concerns or phishing | security@yklabs.example |

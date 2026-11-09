@@ -1,5 +1,5 @@
 PAYROLL FAQ
-Owner: Payroll team (payroll@larkspur.example)
+Owner: Payroll team (payroll@yklabs.example)
 
 Q: When do I get paid?
 A: You are paid monthly on the last working day of the month. If that day is a bank holiday, you are paid on the working day before.
@@ -17,7 +17,7 @@ Q: How do I change my bank details?
 A: Update them in PeopleHub under "My details". For security, Payroll will message you on Slack to confirm the change. We never ask you to change bank details by email.
 
 Q: I think my tax code is wrong. What do I do?
-A: Tax codes are set by HMRC, not by Larkspur Labs. Check your tax code in your HMRC personal tax account. If it is wrong, contact HMRC. Once HMRC sends us a new code, it is used on your next payslip.
+A: Tax codes are set by HMRC, not by YK Labs. Check your tax code in your HMRC personal tax account. If it is wrong, contact HMRC. Once HMRC sends us a new code, it is used on your next payslip.
 
 Q: When will I get my P60?
 A: P60s are published in PeopleHub by 31 May each year, for the tax year that ended on 5 April.
@@ -29,4 +29,4 @@ Q: How do bonuses work?
 A: Bonuses, where your contract includes one, are paid with the March payroll. The referral bonus is paid with the payroll after your referred colleague passes probation.
 
 Q: I was overpaid or underpaid. What happens?
-A: Tell payroll@larkspur.example as soon as you notice. Underpayments are corrected with an extra payment within 5 working days. Overpayments are taken back from your next salary, or spread over up to 3 months if you ask.
+A: Tell payroll@yklabs.example as soon as you notice. Underpayments are corrected with an extra payment within 5 working days. Overpayments are taken back from your next salary, or spread over up to 3 months if you ask.

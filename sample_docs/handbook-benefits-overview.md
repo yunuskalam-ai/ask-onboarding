@@ -6,7 +6,7 @@ All permanent employees get these benefits from their **first day**, unless stat
 
 You are enrolled automatically in the company pension scheme.
 
-- Larkspur Labs pays **6% of your salary** if you pay in at least **4%**.
+- YK Labs pays **6% of your salary** if you pay in at least **4%**.
 - If you pay in less than 4%, the company pays the statutory minimum of 3%.
 - You can pay in through **salary sacrifice**, which saves National Insurance.
 - Change your contribution in PeopleHub at any time. Changes made before the 15th of the month apply to that month's payroll.

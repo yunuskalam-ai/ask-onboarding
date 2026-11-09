@@ -1,5 +1,5 @@
 OFFICE GUIDE: LONDON AND MANCHESTER
-Owner: Workplace team (office@larkspur.example)
+Owner: Workplace team (office@yklabs.example)
 
 === LONDON (HEAD OFFICE) ===
 
@@ -9,7 +9,7 @@ We use floors 3 and 4. Reception is on the ground floor.
 
 Opening hours: 7:00 to 21:00, Monday to Friday. The building is closed at weekends and on UK bank holidays.
 
-Keycards: you get your keycard from reception on your first day. Lost keycards cost nothing to replace the first time. Tell office@larkspur.example straight away so the old card can be switched off.
+Keycards: you get your keycard from reception on your first day. Lost keycards cost nothing to replace the first time. Tell office@yklabs.example straight away so the old card can be switched off.
 
 Desks: desks are not assigned. Book a desk in the "Desks" app (open it from Okta). Teams have neighbourhoods: Engineering on floor 4, everyone else on floor 3. Clear your desk at the end of the day; lockers are next to the kitchen on floor 3.
 

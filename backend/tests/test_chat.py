@@ -99,7 +99,7 @@ def test_a_cited_answer_that_mentions_a_gap_is_still_an_answer():
 
 
 def test_an_uncited_answer_without_refusal_words_is_still_an_answer():
-    assert not is_no_answer("Larkspur-Guest.")
+    assert not is_no_answer("YKLabs-Guest.")
 
 
 def test_strip_citations():
