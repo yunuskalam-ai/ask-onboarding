@@ -128,10 +128,12 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `GET /auth/me` | signed in | The current user |
 | `POST /chat` `{question, history}` | signed in | The answer as Server-Sent Events (see §8) |
 | `POST /retrieve` `{question, top_k}` | signed in | The top chunks with scores, without the model |
-| `GET /documents` | signed in | The library with status and chunk counts |
-| `GET /documents/{id}` | signed in | Page texts of a ready document, for highlighting |
+| `GET /documents` | **manager, admin** | The library with status and chunk counts |
+| `GET /documents/summary` | signed in | Counts only (ready, processing, failed), for the chat's "library still loading" hint |
+| `GET /documents/{id}` | signed in | Page texts of a ready document, for highlighting a citation |
 | `GET /documents/{id}/file` | signed in | The original file, inline |
 | `POST /documents` (multipart) | **admin** | Upload; 202, processed in the background |
+| `DELETE /documents/{id}` | **admin** | Delete a document and its chunks: answers stop using it at once; a job still processing it stores nothing |
 | `POST /tickets/draft` `{question}` | signed in | The model drafts a ticket with a tool call; nothing is saved |
 | `POST /tickets` `{title, question, summary}` | signed in | Saves a ticket owned by the caller |
 | `GET /tickets` | signed in | Employees: their own. Managers and admins: all. Each ticket includes its history |
@@ -263,10 +265,11 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
 
 | | Employee | Manager | Admin |
 | --- | --- | --- | --- |
-| Ask, see citations, read documents | ✅ | ✅ | ✅ |
+| Ask, see citations (open the cited document) | ✅ | ✅ | ✅ |
+| Browse the document library (Documents tab) | – | ✅ | ✅ |
 | Open tickets; see them | own | own and their team's | all |
 | Change a ticket's status, add notes | – | their team's | ✅ |
-| Upload or replace documents | – | – | ✅ |
+| Upload, replace or delete documents | – | – | ✅ |
 | Add people; set role, manager, department, active | – | – | ✅ |
 | Overview, question log, audit log, project docs | – | – | ✅ |
 | Notifications | own tickets | their team's tickets | all tickets and system alerts |
@@ -432,7 +435,7 @@ See [TESTING.md](TESTING.md) for the strategy, the catalogue of negative and sec
 - **Answers on a CPU are slow:** 8–15 s to the first word. A GPU or a hosted model fixes this (ARCHITECTURE.md §3).
 - **Sign-in is a demo**, with no passwords. SSO would replace that one step.
 - **One process, one connection per request:** there's no pool or replicas yet.
-- **No document-level permissions:** every signed-in person can read every document.
+- **No document-level permissions:** only managers and admins browse the library, but anyone signed in can open a document's text by its id (that's how citations open).
 - **No rate limiting:** the deployed demo is behind a site-wide password.
 - **Alerts queued while the database is down are kept in memory,** so they're lost if the API restarts before it recovers.
 - **Notifications use polling,** not server push.

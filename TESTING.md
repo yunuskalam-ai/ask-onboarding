@@ -2,13 +2,13 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with alert details). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with document access). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **446 passed**, 0 failed |
+| Backend tests | pytest | **456 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
 | Frontend tests | vitest | **95 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
@@ -245,6 +245,19 @@ Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it
 
 Checked live: with Ollama stopped, two questions produced **one alert counted twice**. Its page showed "Still failing" and six fix steps, and loaded in 1.6 s (it took 4 s before the deadline fix). After starting Ollama, the same page showed "Recovered". There were no console or CSP errors.
 
+### Document access ([test_document_access.py](backend/tests/test_document_access.py))
+
+| Attempt | Expected | Test |
+| --- | --- | --- |
+| An employee lists the library | 403, but documents their answers cite still open | `test_employees_can_still_open_what_answers_cite` |
+| An employee or manager deletes a document | 403, nothing deleted | `test_only_admins_delete` |
+| A cross-site delete | 403, nothing deleted | `test_a_cross_site_delete_is_blocked` |
+| Deleting a missing or malformed id | 404 / 422 | `test_deleting_a_missing_document` |
+| Deleting while the document is still processing | the job finds it gone and stores nothing | `test_deleting_while_still_processing_stores_nothing` |
+| After a delete | no chunks remain, search returns nothing from it, audited | `test_an_admin_deletes_a_document_and_answers_stop_using_it` |
+
+Checked in headless Edge: Sam (employee) has no Documents tab, and the page says "Not available for your role". Jordan (manager) sees the library read-only. Alex (admin) sees the upload button and 18 Delete buttons.
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -293,4 +306,4 @@ From `pytest --cov` (statements and branches):
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.3%** | |
+| **Total** | **97.4%** | |

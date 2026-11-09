@@ -20,7 +20,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/sign-in" element={<SignInPage />} />
           <Route path="/chat" element={<RequireRole><ChatPage /></RequireRole>} />
-          <Route path="/documents" element={<RequireRole><DocumentsPage /></RequireRole>} />
+          <Route path="/documents" element={<RequireRole roles={["manager", "admin"]}><DocumentsPage /></RequireRole>} />
           <Route path="/tickets" element={<RequireRole><TicketsPage /></RequireRole>} />
           <Route path="/alerts/:id" element={<RequireRole roles={["admin"]}><AlertPage /></RequireRole>} />
           <Route path="/overview" element={<RequireRole roles={["admin"]}><OverviewPage /></RequireRole>} />

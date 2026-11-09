@@ -499,3 +499,7 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 .command { display: flex; align-items: center; gap: 0.5rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; }
 .command code { flex: 1; overflow-x: auto; white-space: pre; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
 .copy { flex: none; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+
+/* --- Document delete --- */
+.doc-actions { text-align: right; white-space: nowrap; }
+.doc-actions .confirm { font-size: 0.85rem; white-space: normal; }

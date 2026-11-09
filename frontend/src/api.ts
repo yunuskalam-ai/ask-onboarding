@@ -135,7 +135,15 @@ export const deleteDepartment = (id: number) => call(`/api/departments/${id}`, {
 
 // --- Documents -------------------------------------------------------------------
 
+/** Managers and admins. */
 export const listDocuments = () => getJson<DocumentInfo[]>("/api/documents");
+
+/** Counts only; everyone signed in. */
+export const getLibrarySummary = () =>
+  getJson<{ ready: number; processing: number; failed: number }>("/api/documents/summary");
+
+/** Admins. Answers stop using the document at once. */
+export const deleteDocument = (id: number) => call(`/api/documents/${id}`, { method: "DELETE" }).then(() => undefined);
 
 export const getDocumentText = (id: number) => getJson<DocumentText>(`/api/documents/${id}`);
 

@@ -131,10 +131,10 @@ def test_only_admins_upload_documents(client, db, role, allowed):
     assert ("document.upload" in _audit(db)) is allowed
 
 
-@pytest.mark.parametrize("role", ["employee", "manager", "admin"])
-def test_everyone_can_read_documents(client, db, role):
+@pytest.mark.parametrize(("role", "allowed"), [("employee", False), ("manager", True), ("admin", True)])
+def test_only_managers_and_admins_list_the_library(client, db, role, allowed):
     sign_in_as(client, db, role)
-    assert client.get("/api/documents").status_code == 200
+    assert client.get("/api/documents").status_code == (200 if allowed else 403)
 
 
 @pytest.mark.parametrize(("role", "allowed"), [("employee", False), ("manager", False), ("admin", True)])
