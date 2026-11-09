@@ -209,3 +209,59 @@ export const listTickets = () => getJson<Ticket[]>("/api/tickets");
 /** Managers and admins: move a ticket to a new status, with an optional note the employee sees. */
 export const changeTicketStatus = (id: number, status: TicketStatus, note: string) =>
   sendJson<Ticket>("PATCH", `/api/tickets/${id}`, { status, note });
+
+// --- Admin overview ------------------------------------------------------------------
+
+export type Outcome = "answered" | "low_score" | "not_in_sources" | "refused" | "error" | "stopped";
+
+export type Overview = {
+  days: number;
+  questions: {
+    total: number;
+    answered: number;
+    answer_rate: number | null; // null when there were no questions
+    by_outcome: Record<Outcome, number>;
+    median_first_token_ms: number | null;
+    p90_first_token_ms: number | null;
+    per_day: { day: string; total: number; answered: number }[];
+    top_gaps: { question: string; times: number; last_asked: string }[];
+  };
+  tickets: {
+    total: number;
+    by_status: Record<TicketStatus, number>;
+    opened_in_period: number;
+    median_hours_to_resolve: number | null;
+  };
+  documents: { ready: number; processing: number; failed: number; chunks: number };
+  people: Record<Role, number>;
+};
+
+export type LoggedQuestion = {
+  id: number;
+  at: string;
+  user_name: string;
+  question: string;
+  outcome: Outcome;
+  best_score: number | null;
+  sources: string[];
+  first_token_ms: number | null;
+  total_ms: number;
+};
+
+export type AuditEntry = {
+  id: number;
+  at: string;
+  actor: string | null;
+  action: string;
+  details: Record<string, unknown>;
+};
+
+/** Days are counted in the viewer's time zone (an IANA name such as "Asia/Dubai"). */
+export const getOverview = (days: number, timeZone: string) =>
+  getJson<Overview>(`/api/admin/overview?days=${days}&tz=${encodeURIComponent(timeZone)}`);
+
+export const listQuestions = (limit: number, offset: number) =>
+  getJson<LoggedQuestion[]>(`/api/admin/questions?limit=${limit}&offset=${offset}`);
+
+export const listAudit = (limit: number, offset: number) =>
+  getJson<AuditEntry[]>(`/api/admin/audit?limit=${limit}&offset=${offset}`);
