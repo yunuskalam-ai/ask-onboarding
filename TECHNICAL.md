@@ -101,7 +101,8 @@ All tables are in [schema.sql](backend/app/schema.sql), which runs on every star
 | `chunks` | Searchable passages | `document_id` (cascade); `chunk_index`; `page`; `start_char` / `end_char` (offsets into that page); `text`; `embedding vector(384)` with an **HNSW** cosine index; `tsv` generated full-text vector with a **GIN** index |
 | `tickets` | Help-desk tickets | `title`, `question`, `summary`, `user_name`; `status` open / in_progress / resolved / closed; `created_by` (Phase 2; NULL for older tickets); `created_at`, `updated_at` |
 | `ticket_events` *(Phase 2)* | Every status change or note | `ticket_id` (cascade), `user_id` (set NULL), `user_name` (kept if the user is deleted), `from_status`, `to_status`, `note` |
-| `users` *(Phase 2)* | People | `email` UNIQUE, lowercase; `name`; `role` employee / manager / admin |
+| `users` *(Phase 2)* | People | `email` UNIQUE, lowercase; `name`; `role` employee / manager / admin; `active` (inactive people can't sign in and receive nothing); `department_id`; `manager_id` (reporting line; a check stops reporting to yourself, the API stops longer loops) |
+| `departments` *(Phase 2)* | Departments | `name`, unique ignoring case |
 | `sessions` *(Phase 2)* | Signed-in browsers | `token_hash` (SHA-256 of the cookie; the token itself is never stored); `user_id` (cascade); `expires_at` (7 days) |
 | `audit_log` *(Phase 2)* | Who did what | `user_id` (set NULL), `action`, `details` (JSONB). Actions: `sign_in`, `sign_out`, `document.upload`, `user.role`, `ticket.create`, `ticket.status` |
 | `questions` *(Phase 2)* | The question log | `user_id`, `user_name`, `question`, `outcome` (answered / low_score / not_in_sources / refused / error / stopped), `best_score`, `sources` (cited files), `first_token_ms`, `total_ms` |
@@ -139,8 +140,12 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `GET /notifications/unread` | signed in | Just the unread count (what the bell polls) |
 | `POST /notifications/{id}/read` | signed in | Mark one as read (404 if it isn't yours) |
 | `POST /notifications/read-all` | signed in | Mark all of yours as read |
-| `GET /users` | **admin** | Everyone and their roles |
-| `PATCH /users/{id}` `{role}` | **admin** | Change a role (409 for the last admin) |
+| `GET /users` | **admin** | Everyone, with role, active, department, manager and number of direct reports |
+| `POST /users` `{name, email, role, department_id, manager_id}` | **admin** | Add a person (409 if the email exists) |
+| `PATCH /users/{id}` `{name, role, active, department_id, manager_id}` | **admin** | Change any of these; `null` clears a manager or department; deactivating signs them out |
+| `GET /departments` | **admin** | Departments with head counts |
+| `POST /departments` `{name}`, `PATCH /departments/{id}` `{name}` | **admin** | Add or rename (409 if the name exists, ignoring case) |
+| `DELETE /departments/{id}` | **admin** | Delete an empty department (409 while it has people) |
 | `GET /admin/overview?days&tz` | **admin** | KPIs for the last N days (1–365), with days in time zone `tz` |
 | `GET /admin/questions?limit&offset` | **admin** | The question log, newest first |
 | `GET /admin/audit?limit&offset` | **admin** | The audit log, newest first |
@@ -232,9 +237,9 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
 ## 9. Tickets
 
 - **Drafting (Phase 1):** the model is given a `create_ticket` tool (title up to 120 characters, summary up to 1,000) and asked to call it. Ollama tool calls are validated and trimmed. Claude uses `strict: true`. If there's no valid call, or the model is down, the draft falls back to the employee's own question, and an outage also alerts the admins. **Nothing is saved until the person confirms.**
-- **The workflow (Phase 2):** `open → in_progress → resolved → closed`, and back to reopen. Only managers and admins change it. A note can come with the change, or on its own. A change that changes nothing gets 400.
+- **The workflow (Phase 2):** `open → in_progress → resolved → closed`, and back to reopen. Admins change any ticket; managers change their team's, but not their own. A note can come with the change, or on its own. A change that changes nothing gets 400.
 - **History:** every change is a `ticket_events` row, returned with the ticket, oldest first.
-- **Ownership:** a ticket belongs to whoever created it, taken from the session. Employees list only their own.
+- **Ownership and visibility:** a ticket belongs to whoever created it, taken from the session. Employees see their own; managers their own and their team's; admins all. A ticket outside your view answers 404, the same as one that doesn't exist.
 
 ## 10. Sign-in, sessions and roles (Phase 2)
 
@@ -244,29 +249,38 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
   - The cookie `ask_session` is `HttpOnly`, `SameSite=Lax`, `Path=/`, with a 7-day `Max-Age`, and `Secure` on the deployed site (`COOKIE_SECURE=true`).
   - **Signing in again ends the previous session.** Sign-out deletes the session on the server. Expired sessions are cleaned up at sign-in.
 - **The role is read on every request,** so a change applies at once, even to someone already signed in.
-- **Demo accounts** (created when there are no users): Sam Rivera and Priya Nair (employees), Jordan Lee (manager) and Alex Morgan (admin).
+- **Demo accounts** (created when there are no users): Alex Morgan (admin, People & Operations) ← Jordan Lee (manager, Engineering) ← Sam Rivera and Priya Nair (employees, Engineering). An older demo database gets these reporting lines once on start, so the demo manager still has a team.
+
+### Reporting lines, teams and departments
+
+[people.py](backend/app/people.py) holds the rules:
+- **A manager's team** is everyone below them in the reporting tree (direct reports, their reports, and so on), found with a recursive SQL query. `UNION` makes it terminate even on bad data.
+- **Refused changes:** reporting to yourself or creating a loop at any depth; a manager who is inactive or isn't a manager or admin; a missing department; deactivating yourself; losing the last **active** admin; demoting someone to employee while they still have direct reports.
+- **Concurrency:** every people change takes one advisory lock (`people`), so two admins can't make conflicting changes at the same moment. Tested: two admins deactivating each other leaves one active admin.
+- **Inactive people** stay in the database with their history. Their sessions are deleted at once, and `current_user` also refuses inactive people, so a stray session can't work.
 
 | | Employee | Manager | Admin |
 | --- | --- | --- | --- |
 | Ask, see citations, read documents | ✅ | ✅ | ✅ |
-| Open tickets; see them | own | all | all |
-| Change a ticket's status, add notes | – | ✅ | ✅ |
+| Open tickets; see them | own | own and their team's | all |
+| Change a ticket's status, add notes | – | their team's | ✅ |
 | Upload or replace documents | – | – | ✅ |
-| Change roles (never the last admin) | – | – | ✅ |
+| Add people; set role, manager, department, active | – | – | ✅ |
 | Overview, question log, audit log, project docs | – | – | ✅ |
-| Notifications | own tickets | all ticket activity | all ticket activity and system alerts |
+| Notifications | own tickets | their team's tickets | all tickets and system alerts |
 
 ## 11. Notifications and admin alerts (Phase 2)
 
 [notifications.py](backend/app/notifications.py) is the only place that decides who is told what.
 
 - **Audiences** are a closed set of named recipient queries. Callers pick a name and can't pass SQL:
-  - `staff_except_actor`: every manager and admin except the person who acted.
-  - `owner_and_staff_except_actor`: the ticket's owner plus all staff, minus the actor (`UNION` removes duplicates).
+  - `chain_and_admins_except_actor`: the managers above a person (their manager, that manager's manager, and so on) plus every admin, minus the actor.
+  - `owner_chain_and_admins_except_actor`: the same, plus the ticket's owner.
   - `admins`
+  - Only **active** people are ever recipients.
 - **Events:**
-  - A ticket opened → staff except its author.
-  - A status change or note → the owner and staff, except whoever made it.
+  - A ticket opened → the managers above its author, and admins.
+  - A status change or note → the owner, the managers above them, and admins, except whoever made it.
   - System alerts → admins.
 - **Recipients are fixed when the event happens.** Someone promoted later doesn't receive older notifications. Each recipient has their own `read_at`.
 - **Ticket notifications** are written in the ticket change's transaction.

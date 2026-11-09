@@ -6,7 +6,8 @@ The flow has a human in the middle:
 2. The employee reviews and edits the draft in the chat.
 3. POST /api/tickets - saves the ticket the employee approved, as theirs.
 
-Employees see only their own tickets; managers and admins see all of them.
+Employees see their own tickets, managers their own and their team's, admins all
+(see app/people.py for what a team is).
 4. PATCH /api/tickets/{id} - managers and admins move a ticket through
    open -> in_progress -> resolved -> closed (or back), with an optional note
    the employee can read. Every change is kept in the ticket's history.
@@ -19,11 +20,12 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, StringConstraints
 
-from app.auth import record
+from app.auth import User, record
 from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
 from app.db import Connection, one
 from app.deps import SignedIn, Staff, get_conn, get_database_url
 from app.notifications import alert_admins, ticket_opened, ticket_updated
+from app.people import TEAM_SQL
 
 log = logging.getLogger(__name__)
 
@@ -99,6 +101,7 @@ class TicketOut(BaseModel):
     summary: str
     user_name: str
     status: Status
+    created_by: int | None  # the owner; None for tickets from before sign-in existed
     created_at: datetime
     updated_at: datetime
     history: list[EventOut] = []  # oldest first
@@ -109,7 +112,14 @@ class StatusIn(BaseModel):
     note: Note = ""
 
 
-_COLUMNS = "id, title, question, summary, user_name, status, created_at, updated_at"
+_COLUMNS = "id, title, question, summary, user_name, status, created_by, created_at, updated_at"
+
+# The tickets a person may see: their own; a manager's team's; an admin, all.
+_VISIBLE = f"(%(is_admin)s OR created_by = %(me)s OR (%(is_manager)s AND created_by IN ({TEAM_SQL})))"
+
+
+def _scope(user: User) -> dict:
+    return {"is_admin": user.role == "admin", "is_manager": user.role == "manager", "me": user.id, "manager": user.id}
 
 
 @router.post("", status_code=201)
@@ -134,13 +144,10 @@ def create_ticket(body: TicketIn, user: SignedIn, conn: Conn) -> TicketOut:
 
 @router.get("")
 def list_tickets(user: SignedIn, conn: Conn) -> list[TicketOut]:
-    """Employees get their own tickets; managers and admins get everyone's."""
-    everyone = user.role in ("manager", "admin")
+    """Employees: their own. Managers: their own and their team's. Admins: all."""
     rows = conn.execute(
-        f"SELECT {_COLUMNS} FROM tickets "  # noqa: S608  # only a constant column list is interpolated; values are parameters
-        "WHERE %(everyone)s OR created_by = %(user_id)s "
-        "ORDER BY created_at DESC, id DESC",
-        {"everyone": everyone, "user_id": user.id},
+        f"SELECT {_COLUMNS} FROM tickets WHERE {_VISIBLE} ORDER BY created_at DESC, id DESC",  # noqa: S608  # constant SQL; values are parameters
+        _scope(user),
     ).fetchall()
     history = _history(conn, [row["id"] for row in rows])
     return [TicketOut(**row, history=history.get(row["id"], [])) for row in rows]
@@ -148,13 +155,19 @@ def list_tickets(user: SignedIn, conn: Conn) -> list[TicketOut]:
 
 @router.patch("/{ticket_id}")
 def change_status(ticket_id: int, body: StatusIn, user: Staff, conn: Conn) -> TicketOut:
-    """Managers and admins only. Moves the ticket to a new status, or adds a note."""
+    """Managers (for their team) and admins. Moves the ticket to a new status, or adds a note."""
     with conn.transaction():
         # FOR UPDATE: two people changing the same ticket at once are applied one
         # after the other, so each history entry's from_status is accurate.
-        current = conn.execute("SELECT status FROM tickets WHERE id = %s FOR UPDATE", (ticket_id,)).fetchone()
+        current = conn.execute(
+            f"SELECT status, created_by FROM tickets WHERE id = %(ticket)s AND {_VISIBLE} FOR UPDATE",  # noqa: S608  # constant SQL; values are parameters
+            _scope(user) | {"ticket": ticket_id},
+        ).fetchone()
         if current is None:
+            # Same answer whether it doesn't exist or isn't this manager's team: no probing.
             raise HTTPException(404, "No such ticket.")
+        if user.role == "manager" and current["created_by"] == user.id:
+            raise HTTPException(403, "Your own tickets are handled by your manager or an admin.")
         if current["status"] == body.status and not body.note:
             raise HTTPException(400, "Nothing to change: pick a different status or add a note.")
         conn.execute("UPDATE tickets SET status = %s, updated_at = now() WHERE id = %s", (body.status, ticket_id))
@@ -164,7 +177,7 @@ def change_status(ticket_id: int, body: StatusIn, user: Staff, conn: Conn) -> Ti
             (ticket_id, user.id, user.name, current["status"], body.status, body.note),
         )
         record(conn, user, "ticket.status", ticket=ticket_id, old=current["status"], new=body.status)
-        ticket_updated(conn, ticket_id, user, current["status"], body.status, body.note)
+        ticket_updated(conn, ticket_id, current["created_by"], user, current["status"], body.status, body.note)
     query = f"SELECT {_COLUMNS} FROM tickets WHERE id = %s"  # noqa: S608  # only a constant column list is interpolated; values are parameters
     row = one(conn.execute(query, (ticket_id,)))
     return TicketOut(**row, history=_history(conn, [ticket_id]).get(ticket_id, []))

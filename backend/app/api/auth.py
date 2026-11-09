@@ -32,8 +32,8 @@ class SignInIn(BaseModel):
 
 @router.get("/accounts")
 def accounts(conn: Conn) -> list[UserOut]:
-    """The accounts the sign-in page offers. Public, because there are no passwords yet."""
-    return [UserOut(**u.__dict__) for u in auth.list_users(conn)]
+    """The accounts the sign-in page offers (active people only). Public, because there are no passwords yet."""
+    return [UserOut(**u.__dict__) for u in auth.active_accounts(conn)]
 
 
 @router.post("/sign-in")
@@ -43,9 +43,12 @@ def sign_in(
     conn: Conn,
     ask_session: Annotated[str | None, Cookie()] = None,
 ) -> UserOut:
-    user = auth.get_user_by_email(conn, body.email)
-    if user is None:
+    account = auth.get_account_by_email(conn, body.email)
+    if account is None:
         raise HTTPException(404, "There is no account with that email.")
+    if not account.active:
+        raise HTTPException(403, "This account is inactive. Ask an admin to reactivate it.")
+    user = account.user
     if ask_session:
         auth.end_session(conn, ask_session)  # switching accounts: the old session ends, not lingers
     token = auth.start_session(conn, user)  # always a new token, never the one the browser sent

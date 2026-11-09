@@ -103,9 +103,35 @@ export const signOut = () => sendJson<void>("POST", "/api/auth/sign-out", {});
 
 // --- People (admins) ------------------------------------------------------------
 
-export const listUsers = () => getJson<User[]>("/api/users");
+export type Ref = { id: number; name: string };
 
-export const changeRole = (id: number, role: Role) => sendJson<User>("PATCH", `/api/users/${id}`, { role });
+export type Person = User & {
+  active: boolean;
+  department: Ref | null;
+  manager: Ref | null;
+  reports: number; // direct reports
+};
+
+export type NewPerson = { name: string; email: string; role: Role; department_id: number | null; manager_id: number | null };
+
+/** Only the fields given are changed; null clears a manager or department. */
+export type PersonChange = Partial<{ name: string; role: Role; active: boolean; department_id: number | null; manager_id: number | null }>;
+
+export type Department = { id: number; name: string; people: number };
+
+export const listPeople = () => getJson<Person[]>("/api/users");
+
+export const addPerson = (person: NewPerson) => sendJson<Person>("POST", "/api/users", person);
+
+export const changePerson = (id: number, change: PersonChange) => sendJson<Person>("PATCH", `/api/users/${id}`, change);
+
+export const listDepartments = () => getJson<Department[]>("/api/departments");
+
+export const addDepartment = (name: string) => sendJson<Department>("POST", "/api/departments", { name });
+
+export const renameDepartment = (id: number, name: string) => sendJson<Department>("PATCH", `/api/departments/${id}`, { name });
+
+export const deleteDepartment = (id: number) => call(`/api/departments/${id}`, { method: "DELETE" }).then(() => undefined);
 
 // --- Documents -------------------------------------------------------------------
 
@@ -192,6 +218,7 @@ export type Ticket = {
   summary: string;
   user_name: string;
   status: TicketStatus;
+  created_by: number | null; // the owner; null for tickets from before sign-in existed
   created_at: string;
   updated_at: string;
   history: TicketEvent[]; // oldest first

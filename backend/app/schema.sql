@@ -145,3 +145,22 @@ CREATE TABLE IF NOT EXISTS notification_recipients (
 -- "My unread notifications" is the query the header bell runs every 30 seconds.
 CREATE INDEX IF NOT EXISTS notification_recipients_unread_idx
     ON notification_recipients (user_id) WHERE read_at IS NULL;
+
+-- People management: departments, reporting lines and active/inactive.
+CREATE TABLE IF NOT EXISTS departments (
+    id          BIGSERIAL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS departments_name_idx ON departments (lower(name));
+
+-- Inactive people can't sign in and receive nothing; their history stays.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id BIGINT REFERENCES departments(id) ON DELETE SET NULL;
+-- Who this person reports to. A manager's team is everyone below them in
+-- this tree (direct reports, their reports, and so on). Loops are refused
+-- by the API; a database check stops the simplest one, reporting to yourself.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id BIGINT REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_not_own_manager;
+ALTER TABLE users ADD CONSTRAINT users_not_own_manager CHECK (manager_id IS NULL OR manager_id <> id);
+CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);

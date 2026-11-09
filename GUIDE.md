@@ -22,12 +22,12 @@ Everyone signs in, and each person has one of three roles:
 | --- | --- | --- | --- |
 | Ask questions and see the sources | Yes | Yes | Yes |
 | Open help-desk tickets | Yes | Yes | Yes |
-| See tickets | Their own | Everyone's | Everyone's |
-| Update a ticket's status and reply with a note | – | Yes | Yes |
+| See tickets | Their own | Their own and their team's | Everyone's |
+| Update a ticket's status and reply with a note | – | Their team's | Yes |
 | Add or replace company documents | – | – | Yes |
-| Change people's roles | – | – | Yes |
+| Add people; set roles, managers and departments; deactivate leavers | – | – | Yes |
 | See the Overview (usage, gaps, activity) and the project docs | – | – | Yes |
-| Notifications | About their own tickets | About all tickets | About all tickets, plus system problems |
+| Notifications | About their own tickets | About their team's tickets | About all tickets, plus system problems |
 
 These rules are enforced by the server itself, not just hidden in the screens. An employee can't reach a manager's functions even by trying the web address directly.
 
@@ -56,7 +56,8 @@ On **Chat**, type a question the way you'd ask a colleague. While the assistant 
 ### Tickets
 
 - **Employees** see **My tickets**: the questions they sent to the help desk, each with its status and any replies.
-- **Managers and admins** see **All tickets**. They can move each one along and add a note for the person who asked:
+- **Managers** see **Team tickets**: their own and those of everyone who reports to them, directly or further down. They move their team's tickets along; their own ticket is handled by their manager or an admin.
+- **Admins** see **All tickets**. Managers and admins can move each one along and add a note for the person who asked:
 
   | Status | Meaning |
   | --- | --- |
@@ -75,7 +76,8 @@ The **bell** shows a red number when something new needs your attention. Click i
 | Who | Is told about |
 | --- | --- |
 | Employees | Their own tickets, when the status changes or someone replies |
-| Managers and admins | New tickets, and every change or reply on any ticket |
+| Managers | New tickets, changes and replies for their team |
+| Admins | Every ticket |
 | Admins | **System problems** too, shown in red or amber: for example the assistant's model being unreachable, a document that couldn't be read, or a server error |
 
 You're never notified about something you did yourself. If the same problem keeps happening, admins get **one** alert every 10 minutes, not a flood.
@@ -89,7 +91,14 @@ You're never notified about something you did yourself. If the same problem keep
 
 ### People (admins)
 
-Lists everyone and their role. Change a role from the drop-down; it takes effect immediately, even for someone who is signed in. There must always be at least one admin.
+Where admins run the organisation in the app:
+- **Add a person:** name, work email, role, department and who they report to. They can sign in straight away.
+- **Change** anyone's role, department or manager from the table. Changes apply immediately, even to someone signed in.
+- **Deactivate** someone who has left: they're signed out at once, can't sign in, and receive nothing, but their tickets and history stay. Reactivate them any time.
+- **Departments:** add, rename, or delete an empty one.
+- **Team structure** shows who reports to whom.
+
+The app refuses changes that would break things: someone reporting to themselves or a loop of managers, reporting to someone who isn't a manager, removing the last active admin, deactivating yourself, or making a manager an employee while people still report to them.
 
 ### Overview (admins)
 
@@ -150,4 +159,4 @@ The project's own documentation, readable inside the app: this guide, the README
 | Phase | What it covers |
 | --- | --- |
 | **Phase 1: the original brief** | Upload documents; answers with exact sources; honest "I don't know"; a drafted help-desk ticket; one-command setup; a measured quality test; smarter search that combines meaning and keywords |
-| **Phase 2: refinements** | A home page; sign-in with employee, manager and admin roles; the ticket workflow with statuses, notes and history; notifications and admin alerts; the Overview; the Docs page; light and dark mode; the typing indicator; security hardening; automatic checks on every change; the public demo server |
+| **Phase 2: refinements** | A home page; sign-in with employee, manager and admin roles; people management with departments and reporting lines (managers handle their team's tickets); the ticket workflow with statuses, notes and history; notifications and admin alerts; the Overview; the Docs page; light and dark mode; the typing indicator; security hardening; automatic checks on every change; the public demo server |

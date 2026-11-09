@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from app.api import admin, auth, chat, docs, documents, notifications, retrieve, tickets, users
-from app.auth import seed_demo_users
+from app.auth import place_existing_demo_users, seed_demo_users
 from app.config import settings
 from app.db import connect, init_schema
 from app.deps import get_database_url
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
         init_schema(conn)
         if settings.seed_demo_users:
             seed_demo_users(conn)
+            place_existing_demo_users(conn)  # upgrade an older demo database (no-op otherwise)
     # Seeding and model warm-up run in the background, so the API is
     # healthy (and the web app usable) while they finish.
     start_background_tasks()

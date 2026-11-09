@@ -55,7 +55,7 @@ def test_cross_site_sign_in_is_blocked_and_creates_no_session(client, db):
 def test_cross_site_status_change_is_blocked(client, db):
     sign_in_as(client, db, "employee", "Sam")
     ticket = client.post("/api/tickets", json={"title": "T", "question": "Q?"}).json()
-    sign_in_as(client, db, "manager")
+    sign_in_as(client, db, "admin")
 
     response = client.patch(
         f"/api/tickets/{ticket['id']}", json={"status": "closed"}, headers={"Origin": "https://evil.example"}
