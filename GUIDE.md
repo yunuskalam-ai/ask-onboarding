@@ -78,9 +78,9 @@ The **bell** shows a red number when something new needs your attention. Click i
 | Employees | Their own tickets, when the status changes or someone replies |
 | Managers | New tickets, changes and replies for their team |
 | Admins | Every ticket |
-| Admins | **System problems** too, shown in red or amber: for example the assistant's model being unreachable, a document that couldn't be read, or a server error |
+| Admins | **System problems** too, shown in red or amber: for example the assistant's model being unreachable, a document that couldn't be read, or a server error. **Click one to open its page**: what happened and how many times, what it means for people using the app, the likely causes, and step-by-step fixes with the exact commands to run. A live check at the top refreshes every 15 seconds and turns green, *Recovered*, once the problem is fixed. |
 
-You're never notified about something you did yourself. If the same problem keeps happening, admins get **one** alert every 10 minutes, not a flood.
+You're never notified about something you did yourself. If the same problem keeps happening, admins get **one** alert that counts the repeats, not a flood.
 
 ### Documents (admins)
 
@@ -106,6 +106,7 @@ A one-page health check for the last 7, 30 or 90 days:
 
 | Section | Shows |
 | --- | --- |
+| **System status** | Live: is the database working, is the answer model ready, are all documents readable |
 | **Questions asked** and **answered from the documents** | How much the assistant is used, and how often it finds an answer |
 | **Time to first word** | How long people wait |
 | **Questions per day** | Answered in green, not answered in orange |
