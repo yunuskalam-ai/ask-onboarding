@@ -21,6 +21,8 @@ from functools import lru_cache
 from typing import Protocol
 
 import anthropic
+from anthropic.types import MessageParam, ToolParam
+from anthropic.types.beta import BetaMessageParam
 
 from app.config import settings
 
@@ -72,16 +74,11 @@ def warm_up() -> None:
     """
     if settings.llm_provider != "ollama":
         return
-    request = urllib.request.Request(
-        f"{settings.ollama_url}/api/generate",
-        # Same options as real requests: a different num_ctx would make Ollama
-        # load the model again on the first question.
-        data=json.dumps({"model": settings.ollama_model, **_OLLAMA_COMMON}).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with _ollama_errors():
-        with urllib.request.urlopen(request, timeout=300):
-            pass
+    # Same options as real requests (_OLLAMA_COMMON): a different num_ctx would
+    # make Ollama load the model again on the first question.
+    request = _ollama_request({}, None, path="/api/generate")
+    with _ollama_errors(), _open(request, timeout=300):
+        pass
 
 
 # --- The ticket tool (shared by both providers) --------------------------------
@@ -91,13 +88,15 @@ TICKET_TOOL_DESCRIPTION = (
     "Draft a help-desk ticket for a question the company documents could not answer. "
     "A person reviews the draft before it is saved."
 )
-TICKET_TOOL_SCHEMA = {
+TICKET_TOOL_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "title": {"type": "string", "description": "Short ticket title, at most 80 characters."},
         "summary": {
             "type": "string",
-            "description": "One or two sentences on what the employee needs to know, for the HR, IT or engineering team.",
+            "description": (
+                "One or two sentences on what the employee needs to know, for the HR, IT or engineering team."
+            ),
         },
     },
     "required": ["title", "summary"],
@@ -127,6 +126,7 @@ def parse_ticket_arguments(arguments: object) -> TicketDraft | None:
 
 # --- Ollama -------------------------------------------------------------------
 
+
 @contextmanager
 def _ollama_errors():
     """Turn the ways an Ollama call can fail into readable LLMErrors."""
@@ -154,12 +154,19 @@ _OLLAMA_COMMON = {
 }
 
 
-def _ollama_request(body: dict, base_url: str | None) -> urllib.request.Request:
-    return urllib.request.Request(
-        f"{base_url or settings.ollama_url}/api/chat",
+def _ollama_request(body: dict, base_url: str | None, path: str = "/api/chat") -> urllib.request.Request:
+    # The URL comes from OLLAMA_URL, which config.py only accepts as http(s)://,
+    # so urllib can't be pointed at file:// or another scheme.
+    return urllib.request.Request(  # noqa: S310
+        f"{base_url or settings.ollama_url}{path}",
         data=json.dumps({"model": settings.ollama_model, **_OLLAMA_COMMON, **body}).encode(),
         headers={"Content-Type": "application/json"},
     )
+
+
+def _open(request: urllib.request.Request, timeout: float):
+    """Every call to Ollama goes through here (the URL is checked in _ollama_request)."""
+    return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 
 def stream_ollama(system: str, messages: list[dict], base_url: str | None = None) -> Iterator[str]:
@@ -167,18 +174,17 @@ def stream_ollama(system: str, messages: list[dict], base_url: str | None = None
     request = _ollama_request(
         {"messages": [{"role": "system", "content": system}, *messages], "stream": True}, base_url
     )
-    with _ollama_errors():
-        # The timeout applies to each read, so a long answer is fine
-        # as long as tokens keep arriving.
-        with urllib.request.urlopen(request, timeout=120) as response:
-            for line in response:
-                chunk = json.loads(line)
-                if "error" in chunk:
-                    raise LLMError(f"The local model failed: {chunk['error']}")
-                if text := chunk.get("message", {}).get("content"):
-                    yield text
-                if chunk.get("done"):
-                    return
+    # The timeout applies to each read, so a long answer is fine as long as
+    # tokens keep arriving.
+    with _ollama_errors(), _open(request, timeout=120) as response:
+        for line in response:
+            chunk = json.loads(line)
+            if "error" in chunk:
+                raise LLMError(f"The local model failed: {chunk['error']}")
+            if text := chunk.get("message", {}).get("content"):
+                yield text
+            if chunk.get("done"):
+                return
 
 
 def draft_ticket_ollama(question: str, base_url: str | None = None) -> TicketDraft | None:
@@ -202,9 +208,8 @@ def draft_ticket_ollama(question: str, base_url: str | None = None) -> TicketDra
         },
         base_url,
     )
-    with _ollama_errors():
-        with urllib.request.urlopen(request, timeout=180) as response:
-            reply = json.load(response)
+    with _ollama_errors(), _open(request, timeout=180) as response:
+        reply = json.load(response)
     for call in reply.get("message", {}).get("tool_calls") or []:
         function = call.get("function", {})
         if function.get("name") == TICKET_TOOL_NAME:
@@ -213,6 +218,7 @@ def draft_ticket_ollama(question: str, base_url: str | None = None) -> TicketDra
 
 
 # --- Anthropic ----------------------------------------------------------------
+
 
 @lru_cache(maxsize=1)
 def _anthropic_client() -> anthropic.Anthropic:
@@ -238,41 +244,46 @@ def _anthropic_errors():
 
 def stream_anthropic(system: str, messages: list[dict]) -> Iterator[str]:
     """Stream from Claude. Raises LLMRefused if the model declines."""
-    with _anthropic_errors():
-        with _anthropic_client().beta.messages.stream(
+    turns: list[BetaMessageParam] = [{"role": m["role"], "content": m["content"]} for m in messages]
+    with (
+        _anthropic_errors(),
+        _anthropic_client().beta.messages.stream(
             model=settings.answer_model,
             max_tokens=8000,
             system=system,
-            messages=messages,
+            messages=turns,
             # Short grounded answers: low effort keeps the first token fast.
             output_config={"effort": settings.answer_effort},
             # If a safety classifier declines, the API retries on a fallback model.
             betas=["server-side-fallback-2026-07-01"],
             fallbacks="default",
-        ) as stream:
-            yield from stream.text_stream
-            final = stream.get_final_message()
+        ) as stream,
+    ):
+        yield from stream.text_stream
+        final = stream.get_final_message()
     if final.stop_reason == "refusal":
         raise LLMRefused()
 
 
 def draft_ticket_anthropic(question: str) -> TicketDraft | None:
+    messages: list[MessageParam] = [{"role": "user", "content": f"Employee question: {question}"}]
+    # Current Claude models don't allow forcing a tool, so the prompt asks for
+    # it and strict mode guarantees schema-valid arguments.
+    tools: list[ToolParam] = [
+        {
+            "name": TICKET_TOOL_NAME,
+            "description": TICKET_TOOL_DESCRIPTION,
+            "input_schema": TICKET_TOOL_SCHEMA,
+            "strict": True,
+        }
+    ]
     with _anthropic_errors():
         response = _anthropic_client().messages.create(
             model=settings.answer_model,
             max_tokens=4000,
             system=TICKET_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": f"Employee question: {question}"}],
-            # Current Claude models don't allow forcing a tool, so the prompt asks
-            # for it and strict mode guarantees schema-valid arguments.
-            tools=[
-                {
-                    "name": TICKET_TOOL_NAME,
-                    "description": TICKET_TOOL_DESCRIPTION,
-                    "input_schema": TICKET_TOOL_SCHEMA,
-                    "strict": True,
-                }
-            ],
+            messages=messages,
+            tools=tools,
             output_config={"effort": settings.answer_effort},
         )
     if response.stop_reason == "refusal":

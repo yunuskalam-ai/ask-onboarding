@@ -4,13 +4,13 @@ import json
 from collections.abc import Iterator
 from typing import Annotated, Literal
 
-import psycopg
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, StringConstraints
 
 from app.chat.llm import StreamAnswerFn, stream_answer
 from app.chat.service import Event, Turn, answer_events
+from app.db import Connection
 from app.deps import SignedIn, get_conn, get_query_embedder
 from app.retrieval.search import QueryEmbedFn, retrieve
 
@@ -37,7 +37,7 @@ def get_llm() -> StreamAnswerFn:
 def chat(
     body: ChatIn,
     user: SignedIn,
-    conn: Annotated[psycopg.Connection, Depends(get_conn)],
+    conn: Annotated[Connection, Depends(get_conn)],
     embed: Annotated[QueryEmbedFn, Depends(get_query_embedder)],
     llm: Annotated[StreamAnswerFn, Depends(get_llm)],
 ) -> StreamingResponse:

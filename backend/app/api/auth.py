@@ -6,17 +6,17 @@ See app/auth.py for what is real and what a production deployment would change.
 
 from typing import Annotated
 
-import psycopg
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from pydantic import BaseModel, StringConstraints
 
 from app import auth
 from app.config import settings
+from app.db import Connection
 from app.deps import SignedIn, get_conn
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-Conn = Annotated[psycopg.Connection, Depends(get_conn)]
+Conn = Annotated[Connection, Depends(get_conn)]
 
 
 class UserOut(BaseModel):

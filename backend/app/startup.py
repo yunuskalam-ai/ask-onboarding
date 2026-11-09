@@ -15,7 +15,7 @@ from pathlib import Path
 
 from app.chat.llm import warm_up
 from app.config import settings
-from app.db import connect
+from app.db import connect, one
 from app.ingest.embedder import embed_passages
 from app.ingest.parsers import SUPPORTED_EXTENSIONS
 from app.ingest.service import EmbedFn, process_document, save_upload
@@ -27,7 +27,7 @@ def seed_sample_docs(database_url: str, folder: Path, embed: EmbedFn = embed_pas
     """Ingest every supported file in `folder` if there are no documents yet. Returns how many."""
     files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS)
     with connect(database_url) as conn:
-        if conn.execute("SELECT count(*) AS n FROM documents").fetchone()["n"] > 0:
+        if one(conn.execute("SELECT count(*) AS n FROM documents"))["n"] > 0:
             return 0
         # Register them all first, so the Documents page lists every file as
         # "processing" straight away, then process them one by one.

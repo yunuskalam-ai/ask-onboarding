@@ -16,19 +16,19 @@ import logging
 from datetime import datetime
 from typing import Annotated, Literal
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, StringConstraints
 
-from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
 from app.auth import record
+from app.chat.llm import DraftTicketFn, LLMError, draft_ticket
+from app.db import Connection, one
 from app.deps import SignedIn, Staff, get_conn
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
-Conn = Annotated[psycopg.Connection, Depends(get_conn)]
+Conn = Annotated[Connection, Depends(get_conn)]
 
 
 Question = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
@@ -108,14 +108,16 @@ _COLUMNS = "id, title, question, summary, user_name, status, created_at, updated
 @router.post("", status_code=201)
 def create_ticket(body: TicketIn, user: SignedIn, conn: Conn) -> TicketOut:
     # The owner comes from the session, never from the request body.
-    row = conn.execute(
-        f"""
-        INSERT INTO tickets (title, question, summary, user_name, created_by)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING {_COLUMNS}
-        """,
-        (body.title, body.question, body.summary, user.name, user.id),
-    ).fetchone()
+    row = one(
+        conn.execute(
+            f"""
+            INSERT INTO tickets (title, question, summary, user_name, created_by)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING {_COLUMNS}
+            """,  # noqa: S608  # only a constant column list is interpolated; values are parameters
+            (body.title, body.question, body.summary, user.name, user.id),
+        )
+    )
     record(conn, user, "ticket.create", ticket=row["id"], title=body.title)
     return TicketOut(**row)
 
@@ -125,7 +127,7 @@ def list_tickets(user: SignedIn, conn: Conn) -> list[TicketOut]:
     """Employees get their own tickets; managers and admins get everyone's."""
     everyone = user.role in ("manager", "admin")
     rows = conn.execute(
-        f"SELECT {_COLUMNS} FROM tickets "
+        f"SELECT {_COLUMNS} FROM tickets "  # noqa: S608  # only a constant column list is interpolated; values are parameters
         "WHERE %(everyone)s OR created_by = %(user_id)s "
         "ORDER BY created_at DESC, id DESC",
         {"everyone": everyone, "user_id": user.id},
@@ -152,11 +154,12 @@ def change_status(ticket_id: int, body: StatusIn, user: Staff, conn: Conn) -> Ti
             (ticket_id, user.id, user.name, current["status"], body.status, body.note),
         )
         record(conn, user, "ticket.status", ticket=ticket_id, old=current["status"], new=body.status)
-    row = conn.execute(f"SELECT {_COLUMNS} FROM tickets WHERE id = %s", (ticket_id,)).fetchone()
+    query = f"SELECT {_COLUMNS} FROM tickets WHERE id = %s"  # noqa: S608  # only a constant column list is interpolated; values are parameters
+    row = one(conn.execute(query, (ticket_id,)))
     return TicketOut(**row, history=_history(conn, [ticket_id]).get(ticket_id, []))
 
 
-def _history(conn: psycopg.Connection, ticket_ids: list[int]) -> dict[int, list[EventOut]]:
+def _history(conn: Connection, ticket_ids: list[int]) -> dict[int, list[EventOut]]:
     """Status changes for these tickets, oldest first, in one query."""
     history: dict[int, list[EventOut]] = {}
     if not ticket_ids:

@@ -17,10 +17,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
-import psycopg
 from psycopg.types.json import Jsonb
 
 from app.config import settings
+from app.db import Connection, one
 from app.ingest.chunker import chunk_pages
 from app.ingest.embedder import embed_passages
 from app.ingest.parsers import EmptyDocument, file_type, parse
@@ -40,7 +40,7 @@ def content_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def save_upload(conn: psycopg.Connection, filename: str, data: bytes) -> Upload:
+def save_upload(conn: Connection, filename: str, data: bytes) -> Upload:
     """Store a new file, or replace the file with the same name."""
     kind = file_type(filename)  # raises UnsupportedFileType before we store anything
     digest = content_hash(data)
@@ -53,8 +53,9 @@ def save_upload(conn: psycopg.Connection, filename: str, data: bytes) -> Upload:
         if existing and existing["content_hash"] == digest and existing["status"] == "ready":
             return Upload(existing["id"], unchanged=True)
 
-        row = conn.execute(
-            """
+        row = one(
+            conn.execute(
+                """
             INSERT INTO documents (filename, content_hash, file_type, status, original)
             VALUES (%s, %s, %s, 'processing', %s)
             ON CONFLICT (filename) DO UPDATE SET
@@ -67,15 +68,16 @@ def save_upload(conn: psycopg.Connection, filename: str, data: bytes) -> Upload:
                 updated_at   = now()
             RETURNING id
             """,
-            (filename, digest, kind, data),
-        ).fetchone()
+                (filename, digest, kind, data),
+            )
+        )
         # Same transaction as the replace: old text is never searchable again.
         conn.execute("DELETE FROM chunks WHERE document_id = %s", (row["id"],))
     return Upload(row["id"], unchanged=False)
 
 
 def process_document(
-    conn: psycopg.Connection,
+    conn: Connection,
     document_id: int,
     embed: EmbedFn = embed_passages,
     chunk_size: int | None = None,
@@ -103,9 +105,7 @@ def process_document(
         return
 
     with conn.transaction():
-        current = conn.execute(
-            "SELECT content_hash FROM documents WHERE id = %s FOR UPDATE", (document_id,)
-        ).fetchone()
+        current = conn.execute("SELECT content_hash FROM documents WHERE id = %s FOR UPDATE", (document_id,)).fetchone()
         if current is None or current["content_hash"] != doc["content_hash"]:
             # A newer upload replaced this file while we were embedding.
             # Its own job will store the new chunks, so we drop ours.
@@ -130,7 +130,7 @@ def process_document(
 
 
 def ingest_file(
-    conn: psycopg.Connection,
+    conn: Connection,
     filename: str,
     data: bytes,
     embed: EmbedFn = embed_passages,
@@ -144,7 +144,7 @@ def ingest_file(
     return upload
 
 
-def _mark_failed(conn: psycopg.Connection, document_id: int, expected_hash: str, message: str) -> None:
+def _mark_failed(conn: Connection, document_id: int, expected_hash: str, message: str) -> None:
     # Only if the file was not replaced in the meantime.
     conn.execute(
         """
