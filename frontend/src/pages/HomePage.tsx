@@ -64,7 +64,7 @@ export default function HomePage() {
     <div className="home">
       <section className="hero">
         <div className="hero-text">
-          <p className="eyebrow">Onboarding assistant · Larkspur Labs</p>
+          <p className="eyebrow">Onboarding assistant · YK Labs</p>
           <h1>Answers from your company's own documents, with the source one click away.</h1>
           <p className="lead">
             New starters ask in plain English. Ask Onboarding finds the passage that answers it and shows exactly
@@ -126,7 +126,7 @@ export default function HomePage() {
       </section>
 
       <footer className="home-footer muted small">
-        Larkspur Labs is a fictional company. Source code:{" "}
+        YK Labs is a fictional company. Source code:{" "}
         <a href="https://github.com/yunuskalam-ai/ask-onboarding">github.com/yunuskalam-ai/ask-onboarding</a>
       </footer>
     </div>

@@ -47,6 +47,7 @@ The complete technical description of Ask Onboarding: every component, table, en
 | `backend/app/notifications.py` | Who is notified about what; admin system alerts |
 | `backend/app/startup.py` | Seeding, model warm-up, pruning, the alert-delivery loop |
 | `backend/app/reindex.py` | `python -m app.reindex`: rebuild every document's chunks |
+| `backend/app/refresh_samples.py` | `python -m app.refresh_samples`: replace stored sample documents that differ from `sample_docs/` |
 | `backend/app/api/` | One router per area: `auth`, `users`, `documents`, `retrieve`, `chat`, `tickets`, `notifications`, `admin`, `docs` |
 | `backend/tests/` | pytest suites (see [TESTING.md](TESTING.md)) |
 | `frontend/src/` | React app: `pages/`, `components/`, `api.ts` (typed API calls), `auth.tsx` + `session.ts` (who is signed in), pure helpers with tests |
@@ -72,7 +73,7 @@ The complete technical description of Ask Onboarding: every component, table, en
 - **Volumes:** `db_data` (Postgres), `ollama_models` (the model), and `caddy_data` on the server (certificates).
 - **The API image** bakes in the embedding model (about 70 MB) and the project docs.
 
-**On API start** (`main.lifespan`): the schema is applied, and the demo accounts are created if the `users` table is empty. Two background threads start:
+**On API start** (`main.lifespan`): the schema is applied, demo accounts on the old `@larkspur.example` domain move to `@yklabs.example` (the demo company was renamed; a no-op once done), and the demo accounts are created if the `users` table is empty. Two background threads start:
 - **Startup tasks:** load `sample_docs/` into an empty library, warm up the model with the same options as chat (so it isn't loaded twice), and delete notifications older than 180 days.
 - **Alert delivery:** every 30 s, it delivers admin alerts that were queued while the database was unreachable.
 
@@ -424,6 +425,7 @@ See [TESTING.md](TESTING.md) for the strategy, the catalogue of negative and sec
 | --- | --- |
 | Logs | `docker compose logs -f api` (on a server, with `sudo`) |
 | Re-index after changing chunking or the embedding model | `docker compose exec api python -m app.reindex` |
+| Replace stored sample documents with the current `sample_docs/` files (only same-named, changed ones) | `docker compose exec api python -m app.refresh_samples` |
 | Answer-quality eval | `docker compose exec api python /app/eval/run_eval.py` (uses a separate `_eval` database) |
 | Calibrate the threshold | `python eval/calibrate_threshold.py` (signs in automatically) |
 | Health | `GET /api/health` |

@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with document access). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with the YK Labs rename). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **456 passed**, 0 failed |
+| Backend tests | pytest | **460 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
 | Frontend tests | vitest | **95 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 35 files |
+| Python types | mypy | 0 errors in 36 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -258,6 +258,16 @@ Checked live: with Ollama stopped, two questions produced **one alert counted tw
 
 Checked in headless Edge: Sam (employee) has no Documents tab, and the page says "Not available for your role". Jordan (manager) sees the library read-only. Alex (admin) sees the upload button and 18 Delete buttons.
 
+### Renaming the demo company ([test_rename.py](backend/tests/test_rename.py))
+
+| Situation | Expected | Test |
+| --- | --- | --- |
+| Demo accounts on the old domain | moved to `@yklabs.example` once; other addresses untouched | `test_demo_emails_move_to_the_new_domain_once` |
+| The new address is already taken | nothing overwritten | `test_a_taken_new_address_is_never_overwritten` |
+| Refreshing the samples | only same-named, changed documents are replaced; safe to run again | `test_refresh_replaces_only_changed_samples` |
+
+Checked on the real dev database: 4 demo accounts renamed, 16 changed samples replaced (a second run replaced 0), and no stored passage mentions the old name. The retrieval eval gives exactly the same hit@1/3/5 as before the rename.
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -306,4 +316,4 @@ From `pytest --cov` (statements and branches):
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.4%** | |
+| **Total** | **97.3%** | |

@@ -52,7 +52,7 @@ The server checks the role on every request, not just the UI.
 The model runs on the CPU, so the first words of an answer take a few seconds. To use Claude instead, copy `.env.example` to `.env`, then set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
 
 - API docs (try the endpoints): http://localhost:8000/docs
-- The API needs a session. Sign in once and keep the cookie: `curl -c cookies.txt -H "Content-Type: application/json" -d '{"email": "alex@larkspur.example"}' localhost:8000/api/auth/sign-in`
+- The API needs a session. Sign in once and keep the cookie: `curl -c cookies.txt -H "Content-Type: application/json" -d '{"email": "alex@yklabs.example"}' localhost:8000/api/auth/sign-in`
 - Upload a file (admins): `curl -b cookies.txt -F "file=@sample_docs/faq-payroll.txt" localhost:8000/api/documents`
 - See document status: `curl -b cookies.txt localhost:8000/api/documents`
 - Ask a question (streams Server-Sent Events): `curl -N -b cookies.txt -H "Content-Type: application/json" -d '{"question": "Can I deploy on a Friday?"}' localhost:8000/api/chat`
@@ -101,7 +101,7 @@ npm test
 
 ## Sample data
 
-`sample_docs/` holds 18 documents for **Larkspur Labs**, a made-up 300-person software company. There are 12 Markdown files, 4 text files and 2 multi-page PDFs, covering the employee handbook, the engineering wiki, IT guides and office information. Every name, address and email in them is fictional (`*.example` domains).
+`sample_docs/` holds 18 documents for **YK Labs**, a made-up 300-person software company. There are 12 Markdown files, 4 text files and 2 multi-page PDFs, covering the employee handbook, the engineering wiki, IT guides and office information. Every name, address and email in them is fictional (`*.example` domains).
 
 Regenerate the PDFs with `pip install fpdf2==2.8.3 && python scripts/make_sample_pdfs.py`.
 
