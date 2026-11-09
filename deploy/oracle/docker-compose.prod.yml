@@ -1,0 +1,35 @@
+# Production overrides for a public server, on top of docker-compose.yml.
+# deploy/oracle/setup.sh puts COMPOSE_FILE in .env so a plain
+# `docker compose up -d` uses both files.
+#
+# Differences from the local stack:
+#   - Only Caddy is reachable from the internet (ports 80 and 443). The
+#     database, the API and Ollama are reachable only inside Docker's network.
+#   - Caddy adds HTTPS (a free Let's Encrypt certificate) and a password,
+#     because the app has no login and anyone could otherwise upload files.
+services:
+  db:
+    ports: !reset []
+  api:
+    ports: !reset []
+  web:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env (deploy/oracle/setup.sh does this)}
+      DEMO_USER: ${DEMO_USER:-demo}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set DEMO_PASSWORD_HASH in .env (deploy/oracle/setup.sh does this)}
+    volumes:
+      - ./deploy/oracle/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # the certificate, so a restart doesn't request a new one
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
