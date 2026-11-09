@@ -1,0 +1,12 @@
+# The only public entry point. Values come from .env (see setup.sh).
+# SITE_ADDRESS is a host name such as 1-2-3-4.sslip.io: Caddy gets an HTTPS
+# certificate for it automatically. Use http://<ip> for plain HTTP instead.
+{$SITE_ADDRESS} {
+	basic_auth {
+		{$DEMO_USER} {$DEMO_PASSWORD_HASH}
+	}
+	reverse_proxy web:80 {
+		# Send chat tokens to the browser as soon as they arrive.
+		flush_interval -1
+	}
+}

@@ -37,6 +37,8 @@ The model runs on the CPU, so the first words of an answer take a few seconds. T
 - See document status: `curl localhost:8000/api/documents`
 - Ask a question (streams Server-Sent Events): `curl -N -H "Content-Type: application/json" -d '{"question": "Can I deploy on a Friday?"}' localhost:8000/api/chat`
 
+**Deploying to a server:** [deploy/oracle/README.md](deploy/oracle/README.md) puts the same stack on a free Oracle Cloud server, with HTTPS and a password in front.
+
 ## Running the tests
 
 Tests need the database running (`docker compose up -d db`). They use a separate `ask_onboarding_test` database, so your data is not touched.
@@ -71,6 +73,7 @@ npm test
 | `sample_docs/` | Sample company documents, loaded on first start |
 | `scripts/` | Helper scripts, such as the generator for the sample PDFs |
 | `db/init.sql` | Enables the pgvector extension |
+| `deploy/oracle/` | Public deployment: HTTPS and password (Caddy), production compose override, setup script |
 
 ## Sample data
 
