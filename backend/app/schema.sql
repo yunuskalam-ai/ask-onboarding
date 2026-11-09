@@ -98,3 +98,24 @@ CREATE TABLE IF NOT EXISTS ticket_events (
     note         TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ticket_events_ticket_idx ON ticket_events (ticket_id, at);
+
+-- Every question asked in the chat, for the admin overview: how often the
+-- documents answer, what they don't cover, and how fast answers start.
+-- Admins can read these; see GUIDE.md on privacy.
+CREATE TABLE IF NOT EXISTS questions (
+    id              BIGSERIAL PRIMARY KEY,
+    at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id         BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    user_name       TEXT NOT NULL,
+    question        TEXT NOT NULL,
+    -- answered | low_score (off-topic, the model was not called) | not_in_sources
+    -- (the model said the documents don't cover it) | refused (safety) |
+    -- error (the model failed) | stopped (the browser left mid-answer)
+    outcome         TEXT NOT NULL CHECK (outcome IN
+                        ('answered', 'low_score', 'not_in_sources', 'refused', 'error', 'stopped')),
+    best_score      REAL,                       -- best retrieval similarity
+    sources         TEXT[] NOT NULL DEFAULT '{}',  -- files the answer cited
+    first_token_ms  INT,                        -- NULL when no text was streamed
+    total_ms        INT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS questions_at_idx ON questions (at DESC);
