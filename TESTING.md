@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026, at the commit that added this file. CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with the admin Overview). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **264 passed**, 0 failed |
-| Backend coverage | pytest-cov, branches included | **97.4%** (the build fails below 95%) |
-| Frontend tests | vitest | **33 passed**, 0 failed |
+| Backend tests | pytest | **304 passed**, 0 failed |
+| Backend coverage | pytest-cov, branches included | **97.6%** (the build fails below 95%) |
+| Frontend tests | vitest | **56 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
-| Python formatting | ruff format | all 41 files formatted |
-| Python types | mypy | 0 errors in 27 files |
+| Python formatting | ruff format | all 48 files formatted |
+| Python types | mypy | 0 errors in 29 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -21,6 +21,14 @@ Every number below comes from a real run on 10 Nov 2026, at the commit that adde
 | Answer quality | [eval/run_eval.py](eval/run_eval.py) | 94% accuracy, 4/4 correct refusals, 0 false refusals (see [README](README.md#evaluation)) |
 
 ## How to run everything
+
+One command runs every check CI runs. Run it before committing:
+
+```bash
+bash scripts/check.sh
+```
+
+Or step by step:
 
 ```bash
 docker compose up -d db                    # the tests use a real Postgres, in a separate _test database
@@ -61,10 +69,13 @@ A test that can't fail proves nothing, so each new protection was removed tempor
 | Origin check, session rotation, file headers, prompt filename escaping (all four together) | 7 of the 43 security tests, one or more per protection. The other 36 cover protections that already existed. |
 | The coverage floor itself (raised to 98%, above the actual 97.4%) | the run exits with code 1: "Required test coverage of 98% not reached" |
 
-Mistakes the checks caught *during* this work, before any commit:
+Mistakes the checks caught during this work:
 - **nginx forwarded the host without its port,** so every same-site POST would have been refused. Caught by testing through nginx, not only against the API.
 - **A lint-suppression comment was placed inside a multi-line SQL string,** where it would have become part of the query. Caught by ruff, which still reported the error, then verified by the full suite.
 - **A frontend test meant to check a backslash didn't contain one,** because of a TypeScript escape. Caught by the linter (`no-useless-escape`) and by the test itself.
+- **Questions just after midnight were counted on the previous day** for anyone not in UTC. Days were grouped in UTC, and the browser also read `"2026-11-09"` as UTC midnight. Caught by **looking at a screenshot** of the Overview: the chart said 9 Nov, the question log said 10 Nov. Fixed both sides, with tests for three time zones.
+- **A too-long line was committed** because only part of the checks had run. Caught before pushing. Since then, `scripts/check.sh` runs every CI check in one command.
+- **Invisible no-break-space characters ended up in source files** through a shell-escaping slip. Caught by oxlint (`no-irregular-whitespace`); replaced with visible `\u00a0` escapes, and the source tree was scanned for any others.
 - **A test ran against the developer's real database.** It forgot the test-database fixture, and passed locally because that database had the tables. **CI caught it,** because its database is empty. Fixed, plus a guard in [conftest.py](backend/tests/conftest.py): during tests, the app's database dependency points at an error until a test explicitly chooses the test database. With the guard, the same slip fails locally with a clear message.
 
 ## Negative and security tests
@@ -155,6 +166,20 @@ Expected result means the server's answer. Every test listed passed in the run a
 | The model is down while opening a ticket | the draft falls back to the question; never blocked | `test_draft_still_works_when_the_model_is_down` |
 | Documents still processing or failed | never used as sources | `test_documents_that_are_not_ready_are_never_returned`, `test_hybrid_never_returns_documents_that_are_not_ready` |
 
+### Admin overview and the question log ([test_admin.py](backend/tests/test_admin.py), [test_question_log.py](backend/tests/test_question_log.py))
+
+| Attempt | Expected | Test |
+| --- | --- | --- |
+| Overview, question log or audit log while signed out | 401 | `test_signed_out_gets_401` |
+| The same as an employee or manager (2 roles × 3 endpoints) | 403 | `test_non_admins_get_403` |
+| `days` of 0, 366 or `abc`; `limit` of 0, 201 or 1000; a negative `offset` | 422 | `test_out_of_range_parameters_are_rejected` |
+| `tz` of `Mars/Olympus_Mons`, `UTC; DROP TABLE users`, `../../etc`, 65 characters, empty | 422 (checked against Postgres's own time zone list) | `test_unknown_time_zones_are_rejected` |
+| An empty system | zeros and "–", never a division by zero | `test_an_empty_system_gives_zeros_not_errors` |
+| The question log can't be written (database down) | the answer still streams in full; the failure is logged | `test_a_logging_failure_never_breaks_the_answer` |
+| The browser leaves mid-answer | logged once as `stopped` | `test_a_browser_leaving_mid_answer_is_logged_as_stopped` |
+| A crash inside the answer stream | still logged | `test_a_crash_inside_the_stream_is_still_logged` |
+| An actor deleted after acting | the audit entry stays, as "Deleted user" | `test_the_audit_log_names_the_actor_and_survives_their_deletion` |
+
 ### Settings ([test_config.py](backend/tests/test_config.py))
 
 | Attempt | Expected | Test |
@@ -174,7 +199,9 @@ Expected result means the server's answer. Every test listed passed in the run a
 
 ## Checked live, not in the automated suite
 
-These were run against the real Docker stack, through nginx, with `curl`:
+**In a real browser.** Headless Microsoft Edge is driven over the Chrome DevTools Protocol, signed in as the admin. It opens every page (home, chat, documents, tickets, people, overview) in **light and dark** mode and records console errors, warnings and CSP violations: **none on any page**. It also screenshots the Overview for a visual check, and hovers the chart to confirm the readout works. Those screenshots caught the time-zone bug below.
+
+Also run against the real Docker stack, through nginx, with `curl`:
 - **Security headers:** CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` on pages; `nosniff` and frame denial on the API.
 - **No inline scripts:** the built page contains none, so the strict CSP holds.
 - **The Origin check through nginx:** same-site 200, another site 403, same host on another port 403.
@@ -184,7 +211,7 @@ These were run against the real Docker stack, through nginx, with `curl`:
 ## What is not covered automatically
 
 - **Browser end-to-end tests** (clicking through the UI). The UI was checked by hand in a browser. Playwright tests would be the next step; they need the whole stack, including a model, in CI.
-- **The CSP in real browsers.** It was checked by inspecting the headers and the built page (no inline code), not by running the UI under the policy in CI.
+- **The browser check isn't in CI.** It was run locally with headless Edge (see above); adding it to CI would mean running the whole stack there.
 - **Load and performance tests.** First-token latency is measured by the eval, but there are no concurrency tests. The single-CPU model is the known bottleneck; see [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Answer quality beyond the 20 eval questions.** One question is 6 points of accuracy; see ARCHITECTURE.md §5 for the plan to grow the set.
 - **Rate limiting** isn't implemented, so it isn't tested. The deployed demo sits behind a site-wide password.
@@ -195,10 +222,10 @@ From `pytest --cov` (statements and branches):
 
 | Module | Coverage | Not covered |
 | --- | --- | --- |
-| `app/auth.py`, `app/security.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
+| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/api/admin.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
 | `app/api/tickets.py` | 99% | the default ticket-drafter getter (replaced in tests) |
 | `app/api/auth.py`, `app/startup.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py` | 96–98% | default dependency getters, one log-only branch |
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.4%** | |
+| **Total** | **97.6%** | |
