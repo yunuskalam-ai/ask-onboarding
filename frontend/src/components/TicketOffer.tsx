@@ -2,16 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, createTicket, draftTicket, type Ticket, type TicketDraft } from "../api";
 
-const NAME_KEY = "ask-onboarding:user-name";
-
-function savedName(): string {
-  try {
-    return localStorage.getItem(NAME_KEY) ?? "";
-  } catch {
-    return ""; // storage can be blocked, e.g. in private windows
-  }
-}
-
 type Step =
   | { kind: "offer" }
   | { kind: "drafting" }
@@ -28,7 +18,6 @@ export default function TicketOffer({ question }: { question: string }) {
   const [step, setStep] = useState<Step>({ kind: "offer" });
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
-  const [name, setName] = useState(savedName);
   const [error, setError] = useState<string | null>(null);
 
   async function startDraft() {
@@ -50,12 +39,7 @@ export default function TicketOffer({ question }: { question: string }) {
     setStep({ kind: "saving", draft });
     setError(null);
     try {
-      const ticket = await createTicket({ title, question, summary, user_name: name });
-      try {
-        localStorage.setItem(NAME_KEY, name.trim());
-      } catch {
-        // remembering the name is only a convenience
-      }
+      const ticket = await createTicket({ title, question, summary });
       setStep({ kind: "created", ticket });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the ticket.");
@@ -68,7 +52,7 @@ export default function TicketOffer({ question }: { question: string }) {
   if (step.kind === "created")
     return (
       <div className="ticket done">
-        Ticket #{step.ticket.id} created. The help desk will follow up. <Link to="/tickets">View tickets</Link>
+        Ticket #{step.ticket.id} created. The help desk will follow up. <Link to="/tickets">View your tickets</Link>
       </div>
     );
 
@@ -105,12 +89,8 @@ export default function TicketOffer({ question }: { question: string }) {
         Details for the help desk
         <textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={1000} rows={3} disabled={saving} />
       </label>
-      <label>
-        Your name
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required disabled={saving} />
-      </label>
       <div className="actions">
-        <button type="submit" disabled={saving || !title.trim() || !name.trim()}>
+        <button type="submit" disabled={saving || !title.trim()}>
           {saving ? "Creating…" : "Create ticket"}
         </button>
         <button type="button" className="secondary" onClick={() => setStep({ kind: "dismissed" })} disabled={saving}>

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { ApiError, listTickets, type Ticket } from "../api";
+import { isStaff, useAuth } from "../session";
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 export default function TicketsPage() {
+  const { user } = useAuth();
+  const everyone = isStaff(user);
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -26,8 +29,12 @@ export default function TicketsPage() {
 
   return (
     <section className="page">
-      <h1>Help-desk tickets</h1>
-      <p className="muted">Questions the documents could not answer, newest first.</p>
+      <h1>{everyone ? "All tickets" : "My tickets"}</h1>
+      <p className="muted">
+        {everyone
+          ? "Questions the documents could not answer, from everyone, newest first."
+          : "Questions you asked that the documents could not answer, newest first."}
+      </p>
 
       {error && (
         <div className="notice error" role="alert">
