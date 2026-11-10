@@ -3,7 +3,7 @@
 This puts Ask Onboarding on a public HTTPS address, behind a password. The server runs the same `docker compose` stack as your laptop, plus Caddy in front ([docker-compose.prod.yml](docker-compose.prod.yml)):
 
 - **Only Caddy is reachable from the internet** (ports 80 and 443). The database, API and model can't be reached from outside.
-- **Caddy gets a free HTTPS certificate** and asks for a username and password, because the app has no login.
+- **Caddy gets a free HTTPS certificate** and asks for a username and password. The app's own sign-in is a one-click demo with no passwords, so this keeps strangers out.
 
 The app runs a local model (qwen2.5:3b) that needs about 4 GB of RAM, so the server needs **at least 8 GB**. That rules out most free tiers, which give 1 GB or less. Two options work:
 

@@ -1,5 +1,9 @@
 # Ask Onboarding
 
+[![CI](https://github.com/yunuskalam-ai/ask-onboarding/actions/workflows/ci.yml/badge.svg)](https://github.com/yunuskalam-ai/ask-onboarding/actions/workflows/ci.yml)
+[![Project page](https://img.shields.io/badge/project%20page-online-2f6f4f)](https://yunuskalam-ai.github.io/ask-onboarding/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Ask Onboarding is a RAG assistant that answers new employees' questions from company documents. Every answer cites the exact passage it came from. When the documents don't cover a question, the app says "I don't know" and offers to open a help-desk ticket instead.
 
 **Stack:** FastAPI · Postgres 16 + pgvector · fastembed (local embeddings) · Ollama with qwen2.5:3b (local LLM; Claude optional) · React + Vite + TypeScript · Docker Compose
@@ -15,19 +19,21 @@ Everything runs locally. No API key is needed.
 | | What it covers |
 | --- | --- |
 | **Phase 1: the take-home brief** | Upload PDF, Markdown and text; streamed answers with exact, clickable citations; an honest "not in the documents"; a help-desk ticket drafted by a model tool call and confirmed by a person; `docker compose up` as the only setup step; a 20-question evaluation; hybrid search |
-| **Phase 2: refinements** | Home page; sign-in with employee, manager and admin roles enforced by the server; ticket statuses, notes and history; notifications and admin system alerts; admin Overview (KPIs, question log, gaps in the documents, audit log); People and Docs pages; light and dark themes; a typing indicator; security hardening; CI with a 95% coverage floor; a public deployment |
+| **Phase 2: refinements** | Home page; sign-in with employee, manager and admin roles enforced by the server; people management with departments and reporting lines (managers handle their team's tickets); ticket statuses, notes and history; notifications, and admin alerts that open a page with fix steps and a live check; the admin Overview (KPIs, question log, gaps in the documents, an audit log with IP, location and device); a document library for managers and admins, with delete for admins; readable document titles and a formatted source view; the Docs page; light and dark themes; a typing indicator; security hardening; CI with a 95% coverage floor; a public deployment and a project page |
 
 [GUIDE.md](GUIDE.md) walks through every feature in plain language.
 
 ## What it looks like
 
-| Chat | No answer → help-desk ticket |
+| Chat with a cited answer | No answer → a drafted help-desk ticket |
 | --- | --- |
-| ![An answer with a [1] citation and its source document listed underneath](docs/chat-citation.png) | ![A question the documents can't answer, with the ticket drafted by the model ready for review](docs/ticket-offer.png) |
-| **Documents** | **Tickets** |
-| ![The documents page with the sample files ready](docs/documents.png) | ![The tickets page listing a ticket created from the chat](docs/tickets.png) |
+| ![A cited answer; the source document is open beside it, formatted, with the cited passage marked](docs/chat-citation.png) | ![A question the documents can't answer: the model's ticket draft, ready to check and send](docs/ticket-offer.png) |
+| **Tickets** | **Documents** |
+| ![The tickets page: a compact list, one ticket open with its history and status form](docs/tickets.png) | ![The document library with titles, status and chunk counts](docs/documents.png) |
+| **Overview (admins)** | **People (admins)** |
+| ![The admin overview: live system status, key numbers and questions per day](docs/overview.png) | ![The people page: roles, departments, managers and status](docs/people.png) |
 
-Every answer cites its sources as **[1]**, **[2]**. Clicking one opens a side panel with the exact passage highlighted.
+Every answer cites its sources as **[1]**, **[2]**, listed under the answer by document title. Clicking one opens the document beside the chat, formatted, with the cited passage marked and scrolled into view.
 
 ## Quick start
 
@@ -160,7 +166,6 @@ It uses a separate `ask_onboarding_eval` database and writes full results to `ev
 - **Uploads only.** There is no Google Drive or Confluence sync. Scanned PDFs without a text layer are rejected (no OCR).
 - **English only.** Both the embedding model and the full-text search are English.
 - **Chat history lives in the page.** Reloading the page clears the conversation, though tickets are saved.
-- **No delete in the UI.** Documents can be replaced by uploading the same filename, but not removed.
 - **Built for one machine.** Original files are stored in Postgres, the API runs one process and opens one connection per request, and ingestion runs inside the API. [ARCHITECTURE.md](ARCHITECTURE.md) covers what changes at company scale.
 - **A small evaluation set.** 20 questions, so one question moves accuracy by about 6 points.
 
@@ -172,3 +177,8 @@ It uses a separate `ask_onboarding_eval` database and writes full results to `ev
 - [deploy/README.md](deploy/README.md): deploying to a server
 - [TESTING.md](TESTING.md): test strategy, the negative and security tests with their results, coverage, and what isn't covered
 - [AI_LOG.md](AI_LOG.md): how AI tools were used to build this
+- [Project page](https://yunuskalam-ai.github.io/ask-onboarding/): a public overview with screenshots ([site/](site/))
+
+## License
+
+[MIT](LICENSE). YK Labs and everything in `sample_docs/` are fictional.

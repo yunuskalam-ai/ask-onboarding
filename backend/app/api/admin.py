@@ -202,10 +202,12 @@ class QuestionOut(BaseModel):
 
 @router.get("/questions")
 def recent_questions(admin: Admin, conn: Conn, limit: Limit = 50, offset: Offset = 0) -> list[QuestionOut]:
-    """Newest first."""
+    """Newest first. Sources are shown by document title; a deleted document keeps its filename."""
     rows = conn.execute(
-        "SELECT id, at, user_name, question, outcome, best_score, sources, first_token_ms, total_ms "
-        "FROM questions ORDER BY at DESC, id DESC LIMIT %s OFFSET %s",
+        "SELECT q.id, q.at, q.user_name, q.question, q.outcome, q.best_score, q.first_token_ms, q.total_ms, "
+        "  ARRAY(SELECT coalesce(d.title, s.name) FROM unnest(q.sources) WITH ORDINALITY AS s(name, n) "
+        "        LEFT JOIN documents d ON d.filename = s.name ORDER BY s.n) AS sources "
+        "FROM questions q ORDER BY q.at DESC, q.id DESC LIMIT %s OFFSET %s",
         (limit, offset),
     )
     return [QuestionOut(**r) for r in rows]

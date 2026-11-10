@@ -2,18 +2,18 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with the chat UI refresh). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with the final documentation audit). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **509 passed**, 0 failed |
-| Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
-| Frontend tests | vitest | **112 passed**, 0 failed |
+| Backend tests | pytest | **511 passed**, 0 failed |
+| Backend coverage | pytest-cov, branches included | **97.4%** (the build fails below 95%) |
+| Frontend tests | vitest | **122 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
-| Python formatting | ruff format | all 48 files formatted |
-| Python types | mypy | 0 errors in 36 files |
+| Python formatting | ruff format | all 66 files formatted |
+| Python types | mypy | 0 errors in 39 files |
 | TypeScript types and production build | tsc, vite | 0 errors |
 | TypeScript lint | oxlint `--deny-warnings` | 0 warnings |
 | Known vulnerabilities, Python | pip-audit | 0 |
@@ -69,6 +69,7 @@ A test that can't fail proves nothing, so each new protection was removed tempor
 | --- | --- |
 | Origin check, session rotation, file headers, prompt filename escaping (all four together) | 7 of the 43 security tests, one or more per protection. The other 36 cover protections that already existed. |
 | The coverage floor itself (raised to 98%, above the actual 97.4%) | the run exits with code 1: "Required test coverage of 98% not reached" |
+| The Overview's sentence for one audit action (`department.rename` renamed) | `test_every_audited_action_has_a_sentence_in_the_overview` fails and names the action |
 
 Mistakes the checks caught during this work:
 - **nginx forwarded the host without its port,** so every same-site POST would have been refused. Caught by testing through nginx, not only against the API.
@@ -79,6 +80,9 @@ Mistakes the checks caught during this work:
 - **Invisible no-break-space characters ended up in source files** through a shell-escaping slip. Caught by oxlint (`no-irregular-whitespace`); replaced with visible `\u00a0` escapes, and the source tree was scanned for any others.
 - **A CSS class-name collision:** the notification icon used the class `ticket`, which already styles the ticket-offer box in the chat. Icons rendered off-centre. No test fails on that; a **screenshot** showed it, and the icon classes got their own names.
 - **A test file took 4 minutes,** because one test made 105 real connection attempts to a database that isn't there. It now simulates the outage (the file runs in about 30 s), and two other tests still check the real connection path.
+- **The audit log showed a raw `user.change`** for every People edit: the display knew only the older action name. Caught on the live demo. Every action now has a sentence, and a test compares the actions the backend records with the sentences the Overview knows.
+- **A startup test downloaded the real 127 MB location database.** Caught by the file appearing on disk. Tests now refuse any download (an autouse fixture in conftest).
+- **The ticket form's text box used a typewriter font.** No test checks fonts; a screenshot for the README showed it.
 - **A test ran against the developer's real database.** It forgot the test-database fixture, and passed locally because that database had the tables. **CI caught it,** because its database is empty. Fixed, plus a guard in [conftest.py](backend/tests/conftest.py): during tests, the app's database dependency points at an error until a test explicitly chooses the test database. With the guard, the same slip fails locally with a clear message.
 
 ## Negative and security tests

@@ -73,6 +73,19 @@ describe("describeAudit", () => {
     [entry("user.role", { user: "sam@x", old: "employee", new: "manager" }), "Changed sam@x from employee to manager"],
     [entry("ticket.create", { ticket: 4, title: "Gym" }), "Opened ticket #4: Gym"],
     [entry("ticket.status", { ticket: 4, old: "open", new: "in_progress" }), "Moved ticket #4 from Open to In progress"],
+    [entry("document.delete", { filename: "faq.txt" }), "Deleted faq.txt"],
+    [entry("user.add", { user: "sam@x", role: "employee" }), "Added sam@x as employee"],
+    [
+      entry("user.change", { user: "sam@x", changes: { role: { old: "employee", new: "manager" }, manager_id: { old: 1, new: 2 } } }),
+      "Updated sam@x: role employee → manager, new manager",
+    ],
+    [entry("user.change", { user: "sam@x", changes: { active: { old: true, new: false } } }), "Updated sam@x: deactivated"],
+    [entry("user.change", { user: "sam@x", changes: { active: { old: false, new: true } } }), "Updated sam@x: reactivated"],
+    [entry("user.change", { user: "sam@x", changes: { department_id: { old: null, new: 3 } } }), "Updated sam@x: new department"],
+    [entry("user.change", { user: "sam@x" }), "Updated sam@x"],
+    [entry("department.add", { name: "Sales" }), "Added the Sales department"],
+    [entry("department.rename", { old: "Sales", new: "Revenue" }), "Renamed the Sales department to Revenue"],
+    [entry("department.delete", { name: "Sales" }), "Deleted the Sales department"],
   ])("%#: %s", (e, expected) => expect(describeAudit(e)).toBe(expected));
 
   it("an unknown action still shows its name", () => {
@@ -81,5 +94,8 @@ describe("describeAudit", () => {
 
   it("missing or odd details never crash", () => {
     expect(describeAudit(entry("user.role", { user: { nested: true } }))).toBe("Changed ? from ? to ?");
+    expect(describeAudit(entry("user.change", { user: "sam@x", changes: "garbage" }))).toBe("Updated sam@x");
+    expect(describeAudit(entry("user.change", { user: "sam@x", changes: { role: null } }))).toBe("Updated sam@x: role ? → ?");
   });
+
 });

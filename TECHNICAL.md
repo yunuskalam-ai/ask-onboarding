@@ -40,11 +40,15 @@ The complete technical description of Ask Onboarding: every component, table, en
 | `backend/app/deps.py` | Shared dependencies: database connection, `current_user`, `require_role` |
 | `backend/app/auth.py` | Users, roles, sessions, demo accounts, the audit log |
 | `backend/app/security.py` | The Origin (CSRF) middleware |
+| `backend/app/client_info.py` | The client's IP and browser for each request, for the audit log |
+| `backend/app/geoip.py`, `useragent.py` | Offline IP-to-location lookup; browser, system and device from the User-Agent |
+| `backend/app/people.py` | Reporting-line rules: teams, loops, the last admin, the people lock |
 | `backend/app/ingest/` | `parsers.py`, `chunker.py`, `embedder.py`, `service.py` (store and process) |
 | `backend/app/retrieval/search.py` | Vector and hybrid search, the score guard |
 | `backend/app/chat/` | `prompt.py` (prompt, citations, refusal detection), `llm.py` (Ollama and Claude), `service.py` (the answer event stream) |
 | `backend/app/question_log.py` | Logs every chat question when its stream ends |
 | `backend/app/notifications.py` | Who is notified about what; admin system alerts |
+| `backend/app/runbook.py`, `diagnostics.py` | Each alert's meaning, causes and fix steps; the live checks |
 | `backend/app/startup.py` | Seeding, model warm-up, pruning, the alert-delivery loop |
 | `backend/app/reindex.py` | `python -m app.reindex`: rebuild every document's chunks |
 | `backend/app/refresh_samples.py` | `python -m app.refresh_samples`: replace stored sample documents that differ from `sample_docs/` |
@@ -56,7 +60,8 @@ The complete technical description of Ask Onboarding: every component, table, en
 | `sample_docs/` | 18 fictional company documents, loaded on first start |
 | `deploy/` | Production override, Caddyfile, server setup script, deployment guide |
 | `scripts/check.sh` | Runs every CI check locally |
-| `.github/workflows/ci.yml` | CI |
+| `site/` | The public project page (static HTML and CSS) |
+| `.github/workflows/ci.yml`, `pages.yml` | CI; publishing the project page |
 
 ## 2. Services and runtime
 
@@ -137,8 +142,8 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `DELETE /documents/{id}` | **admin** | Delete a document and its chunks: answers stop using it at once; a job still processing it stores nothing |
 | `POST /tickets/draft` `{question}` | signed in | The model drafts a ticket with a tool call; nothing is saved |
 | `POST /tickets` `{title, question, summary}` | signed in | Saves a ticket owned by the caller |
-| `GET /tickets` | signed in | Employees: their own. Managers and admins: all. Each ticket includes its history |
-| `PATCH /tickets/{id}` `{status, note}` | **manager, admin** | Change status and/or add a note |
+| `GET /tickets` | signed in | Employees: their own. Managers: their own and their team's. Admins: all. Each ticket includes its history |
+| `PATCH /tickets/{id}` `{status, note}` | **manager, admin** | Change status and/or add a note. Managers: their team's tickets, not their own |
 | `GET /notifications?limit&before` | signed in | Your notifications, newest first, plus the unread count |
 | `GET /notifications/unread` | signed in | Just the unread count (what the bell polls) |
 | `POST /notifications/{id}/read` | signed in | Mark one as read (404 if it isn't yours) |
@@ -150,7 +155,7 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `POST /departments` `{name}`, `PATCH /departments/{id}` `{name}` | **admin** | Add or rename (409 if the name exists, ignoring case) |
 | `DELETE /departments/{id}` | **admin** | Delete an empty department (409 while it has people) |
 | `GET /admin/overview?days&tz` | **admin** | KPIs for the last N days (1–365), with days in time zone `tz` |
-| `GET /admin/questions?limit&offset` | **admin** | The question log, newest first |
+| `GET /admin/questions?limit&offset` | **admin** | The question log, newest first; sources by document title |
 | `GET /admin/audit?limit&offset` | **admin** | The audit log, newest first, with `ip`, `location`, `browser`, `os` and `device` |
 | `GET /admin/status` | **admin** | Live checks: database, answer model, document library |
 | `GET /admin/alerts/{id}` | **admin** | One system alert: first and last seen, how many times, what it means, likely causes, fix steps with commands, live checks, and whether it has recovered |
@@ -339,7 +344,7 @@ Clicking a system alert opens `/alerts/<id>`.
 | Tickets | By status (all time); opened in the period; median hours from opening to the first resolved or closed event |
 | Documents, people | By status; chunk count; users by role |
 
-The chart's colours were checked with a colour-blindness validator in both themes. The chart has a legend, a hover readout and a table view. The **question log** and **audit log** are paged, newest first.
+The chart's colours were checked with a colour-blindness validator in both themes. The chart has a legend, a hover readout and a table view. The **question log** and **audit log** are paged, newest first. The question log names sources by document title (a deleted document keeps its filename). Every audited action is shown as a sentence ("Updated sam@…: role employee → manager"), and a test fails if the backend records an action the Overview has no sentence for.
 
 ### Where an audited action came from
 
@@ -384,7 +389,7 @@ The page renders Markdown with `react-markdown` and `remark-gfm`, which build Re
   - **The top bar's height is `--bar`.** The chat and the source panel size from it; under 640px the page links wrap into a scrollable second row and `--bar` grows to match.
 - **CSP-friendly:** there are no inline scripts and no `style=""` attributes in the HTML. Dynamic widths are set through the DOM style API, which the CSP allows.
 - **Edits are explicit:** the People table is read-only; **Edit** opens one form per person, and Save sends a single PATCH with only the changed fields ([personEdit.ts](frontend/src/personEdit.ts)). Deactivating shows a warning and a red button before anything is sent. Tickets are a compact `<details>` list; a `#ticket-<id>` link from a notification opens and scrolls to that one.
-- **Pure helpers** are kept apart from components and unit-tested: `redirect.ts`, `session.ts`, `overviewFormat.ts`, `timeAgo.ts`, `docsLinks.ts`, `answerParts.ts`, `sse.ts`, `citedPassage.ts`, `personEdit.ts`.
+- **Pure helpers** are kept apart from components and unit-tested: `redirect.ts`, `session.ts`, `overviewFormat.ts`, `timeAgo.ts`, `docsLinks.ts`, `answerParts.ts`, `sse.ts`, `citedPassage.ts`, `personEdit.ts`, `teamTree.ts`.
 
 ## 15. Security model
 

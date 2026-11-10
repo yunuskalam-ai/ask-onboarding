@@ -93,14 +93,14 @@
   <rect class="p2" x="651" y="294" width="160" height="78" rx="8"/>
   <text class="m" x="663" y="316">Notifications</text>
   <text class="s" x="663" y="334">ticket updates</text>
-  <text class="s" x="663" y="350">admin system alerts</text>
+  <text class="s" x="663" y="350">alerts with fix steps</text>
   <text class="s" x="663" y="366">deduplicated, queued</text>
 
   <rect class="p2" x="481" y="382" width="160" height="78" rx="8"/>
   <text class="m" x="493" y="404">Admin overview</text>
   <text class="s" x="493" y="422">question log, KPIs</text>
   <text class="s" x="493" y="438">gaps in the documents</text>
-  <text class="s" x="493" y="454">audit log</text>
+  <text class="s" x="493" y="454">audit log (IP, place)</text>
 
   <rect class="p2" x="651" y="382" width="160" height="78" rx="8"/>
   <text class="m" x="663" y="404">Project docs</text>
@@ -111,8 +111,8 @@
   <rect class="mod" x="481" y="480" width="330" height="76" rx="8"/>
   <text class="m" x="493" y="502">Background</text>
   <text class="s" x="493" y="520">on start: seed sample docs, warm up the model,</text>
-  <text class="s" x="493" y="536">prune old notifications; every 30 s: deliver</text>
-  <text class="s" x="493" y="552">alerts that waited for the database</text>
+  <text class="s" x="493" y="536">prune notifications, refresh the IP database;</text>
+  <text class="s" x="493" y="552">every 30 s: retry alerts that waited for the DB</text>
 
   <text class="s" x="481" y="582">Unhandled error → plain 500 + admin alert</text>
   <text class="s" x="481" y="600">Settings validated at startup</text>
@@ -127,7 +127,7 @@
   <text class="m" x="876" y="180">Tickets</text>
   <text class="s" x="876" y="198">tickets, ticket_events</text>
   <text class="m" x="876" y="228">People</text>
-  <text class="s" x="876" y="246">users, sessions</text>
+  <text class="s" x="876" y="246">users, departments, sessions</text>
   <text class="m" x="876" y="276">Records</text>
   <text class="s" x="876" y="294">questions, audit_log</text>
   <text class="s" x="876" y="310">notifications,</text>

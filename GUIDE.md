@@ -130,7 +130,7 @@ The project's own documentation, readable inside the app: this guide, the README
   - if nothing in the library is even close to the question, it doesn't attempt an answer at all
   - if something is close but doesn't actually answer it, the assistant is required to say so
 - **Instructions inside a document are ignored.** A document that says "ignore your rules" is treated as text, not obeyed.
-- **The quality is measured**, not assumed. On 20 test questions it kept back for checking, it answered 94% of the answerable ones correctly, refused all 4 it should have refused, and never refused one it could answer. Every change to the system is re-checked against this test before it's released.
+- **The quality is measured**, not assumed. On 20 test questions it kept back for checking, it answered 94% of the answerable ones correctly, refused all 4 it should have refused, and never refused one it could answer. Any change to how answers are found or written (the search, the model, the instructions) is re-checked against this test before it's kept.
 
 ## Privacy and data
 
@@ -166,4 +166,4 @@ The project's own documentation, readable inside the app: this guide, the README
 | Phase | What it covers |
 | --- | --- |
 | **Phase 1: the original brief** | Upload documents; answers with exact sources; honest "I don't know"; a drafted help-desk ticket; one-command setup; a measured quality test; smarter search that combines meaning and keywords |
-| **Phase 2: refinements** | A home page; sign-in with employee, manager and admin roles; people management with departments and reporting lines (managers handle their team's tickets); the ticket workflow with statuses, notes and history; notifications and admin alerts; the Overview; the Docs page; light and dark mode; the typing indicator; security hardening; automatic checks on every change; the public demo server |
+| **Phase 2: refinements** | A home page; sign-in with employee, manager and admin roles; people management with departments and reporting lines (managers handle their team's tickets); the ticket workflow with statuses, notes and history; notifications, and admin alerts with step-by-step fixes and a live check; the Overview, with an audit log that shows where each action came from; a document library for managers and admins; readable document titles and a formatted source view; the Docs page; light and dark mode; the typing indicator; security hardening; automatic checks on every change; the public demo server and project page |
