@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask Onboarding</title>
+  <meta name="description" content="An onboarding assistant that answers new starters' questions from the company's own documents, with the exact source one click away.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true">?</span> Ask Onboarding</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#tour">Tour</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/yunuskalam-ai/ask-onboarding">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Retrieval-augmented Q&amp;A · open source</p>
+        <h1>Answers from your company's own documents, with the source one click away.</h1>
+        <p class="lead">
+          New starters ask in plain English. Ask Onboarding finds the passage that answers it and shows exactly where
+          it came from. When the documents don't say, it says so and drafts a help-desk ticket.
+        </p>
+        <div class="actions">
+          <a class="button" href="https://34-18-56-53.sslip.io">Try the live demo</a>
+          <a class="button ghost" href="https://github.com/yunuskalam-ai/ask-onboarding">View the code</a>
+        </div>
+        <p class="note">The live demo is behind a site password, because sign-in there is one click. Ask the author for access, or run it yourself in one command (below).</p>
+      </div>
+      <figure class="shot hero-shot">
+        <img src="screenshots/chat.png" alt="The chat: a cited answer, with the source document open beside it and the cited passage marked." width="1280" height="900">
+      </figure>
+    </section>
+
+    <section class="band" id="how">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><span class="n">1</span><h3>Ask</h3><p>Type a question the way you'd ask a colleague in your first week.</p></li>
+        <li><span class="n">2</span><h3>Find</h3><p>Hybrid search, by meaning and by keyword, picks the five passages from the handbook and wiki most likely to hold the answer.</p></li>
+        <li><span class="n">3</span><h3>Cite</h3><p>The answer names its sources. Click one to open the document, formatted, with the exact passage marked.</p></li>
+      </ol>
+    </section>
+
+    <section class="band">
+      <h2>Honest by design</h2>
+      <p class="band-lead">A guess that sounds confident is worse than “I don't know”. Measured on 20 held-out questions:</p>
+      <ul class="results">
+        <li><strong>94%</strong><span>of answerable questions answered correctly</span></li>
+        <li><strong>4 of 4</strong><span>out-of-scope questions honestly refused</span></li>
+        <li><strong>0</strong><span>false “I don't know” answers</span></li>
+        <li><strong>No API key</strong><span>the model runs on the server; documents never leave it</span></li>
+      </ul>
+    </section>
+
+    <section class="band" id="tour">
+      <h2>A quick tour</h2>
+      <div class="tour">
+        <figure class="shot">
+          <img src="screenshots/tickets.png" alt="The tickets page: a compact list with one ticket open, showing its history and the status form." width="1280" height="900" loading="lazy">
+          <figcaption><strong>Tickets.</strong> What the documents can't answer becomes a ticket. Managers and admins move it along with a note, and the person who asked is notified.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="screenshots/overview.png" alt="The admin overview: system status, key numbers and a chart of questions per day." width="1280" height="900" loading="lazy">
+          <figcaption><strong>Overview.</strong> Live system status, how often questions are answered, and the questions the documents don't cover yet.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="screenshots/people.png" alt="The people page: everyone's role, department, manager and status." width="1280" height="900" loading="lazy">
+          <figcaption><strong>People.</strong> Roles, departments and reporting lines. A manager sees their own team's tickets; admins see everything.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>Who can do what</h2>
+      <div class="roles">
+        <div class="role employee"><h3>Employee</h3><ul><li>Ask questions and get cited answers</li><li>Open tickets for anything the documents miss</li><li>Follow their own tickets</li></ul></div>
+        <div class="role manager"><h3>Manager</h3><ul><li>Everything an employee can do</li><li>See their team's tickets and reply</li><li>Browse the document library</li></ul></div>
+        <div class="role admin"><h3>Admin</h3><ul><li>Every ticket, from everyone</li><li>Upload, replace and delete documents</li><li>Manage people, roles and departments</li><li>The overview, the audit log and system alerts</li></ul></div>
+      </div>
+    </section>
+
+    <section class="band" id="docs">
+      <h2>Read more</h2>
+      <ul class="links">
+        <li><a href="https://github.com/yunuskalam-ai/ask-onboarding/blob/main/GUIDE.md"><strong>Guide</strong><span>Every feature in plain language, for business owners and new users</span></a></li>
+        <li><a href="https://github.com/yunuskalam-ai/ask-onboarding/blob/main/ARCHITECTURE.md"><strong>Architecture</strong><span>The design and its trade-offs, in three pages</span></a></li>
+        <li><a href="https://github.com/yunuskalam-ai/ask-onboarding/blob/main/TECHNICAL.md"><strong>Technical reference</strong><span>Data model, API, retrieval, security model and operations</span></a></li>
+        <li><a href="https://github.com/yunuskalam-ai/ask-onboarding/blob/main/TESTING.md"><strong>Testing</strong><span>500+ automated tests, including negative and security tests, with results</span></a></li>
+      </ul>
+    </section>
+
+    <section class="band">
+      <h2>Run it yourself</h2>
+      <p class="band-lead">Needs Docker. The first start downloads the local model (about 2 GB); after that it starts in seconds.</p>
+      <pre><code>git clone https://github.com/yunuskalam-ai/ask-onboarding.git
+cd ask-onboarding
+docker compose up -d</code></pre>
+      <p>Then open <code>http://localhost:8080</code> and sign in as any of the demo people.</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    YK Labs is a fictional company; its documents are written for this demo.
+    Built with FastAPI, PostgreSQL + pgvector, Ollama and React.
+  </footer>
+</body>
+</html>
