@@ -5,6 +5,12 @@ Read by Claude Code at the start of every session. Keep it short and current.
 ## What this is
 A RAG take-home (employee Q&A over company docs) extended in Phase 2. Start with [TECHNICAL.md](TECHNICAL.md) for the system, [TESTING.md](TESTING.md) for tests. Phase 1 = the brief; Phase 2 = everything since.
 
+## Principles (from multica-ai/andrej-karpathy-skills, MIT)
+1. **Think before coding:** state assumptions, surface ambiguity and simpler options, ask when unclear.
+2. **Simplicity first:** the least code that solves the request; nothing speculative or unrequested.
+3. **Surgical changes:** touch only what the task needs; mention unrelated issues, don't fix them unasked.
+4. **Goal-driven:** turn tasks into checks (a failing test first), plan steps with a "verify" each, loop until verified.
+
 ## How we work
 - **One branch and one PR per feature.** The user reviews and merges on GitHub. Never push to `main`.
 - **Small commits** that each build. Messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; PR bodies end with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
