@@ -81,7 +81,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
-button, input { font: inherit; color: inherit; }
+button, input, textarea { font: inherit; color: inherit; }
 h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
 
 :root { --bar: 53px; } /* the top bar's height; pages below it size from this */
