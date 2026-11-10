@@ -68,8 +68,6 @@ Quoted with the spelling tidied up.
 
 ## In my own words
 
-## In my own words
-
 - I used AI a lot, but I learned not to trust it blindly. It recorded a paid API (Anthropic) as our plan even though we had agreed on Ollama with no API key. I noticed and corrected it.
 - I asked for negative tests and proof, not just "tests pass", because passing tests don't show what the app rejects.
 - I didn't want to copy another app's design. I used it only as inspiration and asked for something original.
