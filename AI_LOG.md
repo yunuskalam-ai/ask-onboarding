@@ -68,4 +68,12 @@ Quoted with the spelling tidied up.
 
 ## In my own words
 
-<!-- TODO before submitting: write this section yourself, 5-10 sentences. For example: what surprised you, which AI output you didn't trust and checked, one part of the code you can now explain line by line, and what you would do differently. The graders read this section for honesty. -->
+## In my own words
+
+- I used AI a lot, but I learned not to trust it blindly. It recorded a paid API (Anthropic) as our plan even though we had agreed on Ollama with no API key. I noticed and corrected it.
+- I asked for negative tests and proof, not just "tests pass", because passing tests don't show what the app rejects.
+- I didn't want to copy another app's design. I used it only as inspiration and asked for something original.
+- When I looked at the finished app, I honestly thought it was sloppy. That led to a full UI audit and three fixes.
+- Deployment was harder than I expected. Hugging Face needed a paid plan, Oracle had no capacity, and on Google Cloud, `sudo` kept timing out in the browser SSH window. I set up the server myself in the end.
+- IP-based location is rough. The audit log placed my own sign-in in Karachi.
+- What I'd do differently: check where a PR is going before merging, and look at the app with fresh eyes earlier instead of waiting until the end.
