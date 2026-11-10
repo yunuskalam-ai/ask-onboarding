@@ -422,7 +422,7 @@ export default function PeoplePage() {
                     <th className="num">Reports</th>
                     <th>Status</th>
                     <th>
-                      <span className="visually-hidden">Actions</span>
+                      <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>

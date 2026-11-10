@@ -43,9 +43,11 @@ The demo accounts are:
 - **Jordan Lee** (manager)
 - **Alex Morgan** (admin)
 
-At the top right are your initials. Click them to **sign out**. Next to them:
-- the **bell** shows your notifications
-- the **☀ ☾ ◐** switch picks light mode, dark mode, or whatever your computer uses
+At the top right are your initials. Click them to:
+- **sign out**
+- pick the **theme** with the **☀ ☾ ◐** switch: light mode, dark mode, or whatever your computer uses (before you sign in, the switch sits in the top bar)
+
+Next to your initials, the **bell** shows your notifications. On a phone, the page links sit in a row under the top bar; swipe it to see them all.
 
 ### Asking a question (everyone)
 

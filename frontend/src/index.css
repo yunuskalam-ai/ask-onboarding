@@ -84,10 +84,11 @@ body { margin: 0; background: var(--bg); }
 button, input { font: inherit; color: inherit; }
 h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
 
+:root { --bar: 53px; } /* the top bar's height; pages below it size from this */
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 
 .topbar {
-  display: flex; align-items: center; gap: 1.5rem; height: 53px;
+  display: flex; align-items: center; gap: 1.5rem; height: var(--bar);
   padding: 0 1rem; background: var(--surface); border-bottom: 1px solid var(--border);
   position: relative; z-index: 20;
 }
@@ -111,8 +112,6 @@ button.link { background: none; border: none; color: var(--accent); cursor: poin
 /* --- Documents page --- */
 .page { width: 100%; max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
 
-.upload { display: inline-block; margin: 1rem 0; padding: 0.6rem 1rem; border-radius: 8px; background: var(--accent); color: var(--accent-text); cursor: pointer; font-weight: 600; }
-.upload.disabled { opacity: 0.6; cursor: wait; }
 .upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .upload:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
 
@@ -131,7 +130,7 @@ table.docs { width: 100%; border-collapse: collapse; background: var(--surface);
 .chat-layout { flex: 1; display: grid; grid-template-columns: 1fr; min-height: 0; }
 .chat-layout.with-source { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 
-.chat { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 53px); }
+.chat { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - var(--bar)); }
 .messages { flex: 1; overflow-y: auto; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
 
 .empty { margin: auto; text-align: center; max-width: 560px; }
@@ -158,11 +157,9 @@ button.cite:hover { background: var(--accent); color: var(--accent-text); }
 
 .composer { display: flex; gap: 0.5rem; padding: 0.75rem 1rem; border-top: 1px solid var(--border); background: var(--surface); }
 .composer input { flex: 1; min-width: 0; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
-.composer button { padding: 0.6rem 1.1rem; border: none; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
-.composer button:disabled { opacity: 0.6; cursor: default; }
 
 /* --- Source panel --- */
-.source-panel { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 53px); border-left: 1px solid var(--border); background: var(--surface); }
+.source-panel { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - var(--bar)); border-left: 1px solid var(--border); background: var(--surface); }
 .source-panel header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
 .source-panel header strong { overflow-wrap: anywhere; }
 .source-body { flex: 1; overflow-y: auto; padding: 1rem; }
@@ -172,7 +169,7 @@ mark { background: var(--mark); color: inherit; padding: 0.1rem 0; border-radius
 /* Phone width: the source panel covers the chat instead of sitting beside it. */
 @media (max-width: 800px) {
   .chat-layout.with-source { grid-template-columns: 1fr; }
-  .source-panel { position: fixed; inset: 53px 0 0 0; border-left: none; z-index: 10; height: auto; }
+  .source-panel { position: fixed; inset: var(--bar) 0 0 0; border-left: none; z-index: 10; height: auto; }
   .docs th:nth-child(2), .docs td:nth-child(2) { display: none; }
 }
 
@@ -182,9 +179,6 @@ mark { background: var(--mark); color: inherit; padding: 0.1rem 0; border-radius
 .ticket label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; font-weight: 600; }
 .ticket input, .ticket textarea { font-weight: 400; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); resize: vertical; }
 .ticket .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.ticket button { padding: 0.45rem 0.9rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
-.ticket button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
-.ticket button:disabled { opacity: 0.6; cursor: default; }
 .ticket .notice { margin: 0; }
 
 /* --- Tickets page --- */
@@ -213,10 +207,6 @@ ul.tickets p { margin: 0.5rem 0 0; }
 a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .notice.success { background: var(--success-bg); color: var(--ready); }
-.button { display: inline-block; padding: 0.65rem 1.2rem; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-weight: 600; text-decoration: none; border: 1px solid var(--accent); }
-.button.ghost { background: none; color: var(--text); border-color: var(--border); }
-.button:hover { filter: brightness(1.08); }
-.small-button { padding: 0.35rem 0.8rem; font-size: 0.9rem; }
 select { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.5rem; }
 
 /* --- Header: theme switch and user menu --- */
@@ -233,8 +223,6 @@ select { font: inherit; color: inherit; background: var(--surface); border: 1px 
 .menu-who { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); }
 .menu-who .small { margin: 0; }
 .menu-who .role-pill { align-self: flex-start; margin-top: 0.3rem; }
-.menu button { width: 100%; text-align: left; padding: 0.7rem 1rem; border: none; background: none; cursor: pointer; }
-.menu button:hover { background: var(--bg); }
 
 .role-pill { font-size: 0.75rem; font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid currentColor; color: var(--role-employee); white-space: nowrap; }
 .role-pill.role-manager { color: var(--role-manager); }
@@ -325,8 +313,6 @@ select { font: inherit; color: inherit; background: var(--surface); border: 1px 
 .status-form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 .status-form .grow { flex: 1; min-width: 200px; }
 .status-form input { font-weight: 400; color: var(--text); padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
-.status-form button { padding: 0.45rem 1rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
-.status-form button:disabled { opacity: 0.5; cursor: default; }
 .status-form .notice { flex-basis: 100%; margin: 0; }
 
 /* --- Admin overview --- */
@@ -438,7 +424,7 @@ ul.tickets > li.linked { border-color: var(--accent); box-shadow: 0 0 0 2px colo
 
 /* --- Project docs (admins) --- */
 .docs-layout { flex: 1; display: grid; grid-template-columns: 230px minmax(0, 1fr); width: 100%; }
-.docs-nav { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem 1rem; border-right: 1px solid var(--border); min-height: calc(100vh - 53px); }
+.docs-nav { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem 1rem; border-right: 1px solid var(--border); min-height: calc(100vh - var(--bar)); }
 .docs-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.15rem; }
 .docs-nav a, .docs-nav ul span { display: block; padding: 0.35rem 0.6rem; border-radius: 6px; text-decoration: none; color: var(--text); }
 .docs-nav a.active { background: var(--user-bg); font-weight: 600; }
@@ -474,11 +460,8 @@ tr.inactive td { opacity: 0.6; }
 .person-form label, .form-grid label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 .person-form input, .inline-form input { font-weight: 400; color: var(--text); padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
 .person-form .actions { margin-top: 0.8rem; }
-.person-form button, .inline-form button { padding: 0.45rem 1rem; border: none; border-radius: 6px; background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer; }
-.person-form button:disabled, .inline-form button:disabled { opacity: 0.5; cursor: default; }
 .inline-form { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
 .inline-form input { flex: 1; min-width: 0; }
-.inline-form button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
 .departments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .departments li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
 .departments li .inline-form { margin: 0; flex: 1; }
@@ -492,7 +475,6 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 .tree .role-pill { margin-left: 0.2rem; }
 
 /* --- Alert details and system status --- */
-.alert-page { max-width: 900px; }
 .alert-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .alert-head h1 { margin: 0; }
 .severity { font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; color: #fff; background: var(--role-employee); }
@@ -540,7 +522,6 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 .doc-title { font-weight: 600; }
 
 /* --- People: read-only rows, one edit form at a time --- */
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .state-pill { font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.6rem; border-radius: 999px; border: 1px solid currentColor; color: var(--muted); white-space: nowrap; }
 .state-pill.on { color: var(--ready); }
 tr.editing td { background: var(--user-bg); }
@@ -548,5 +529,35 @@ tr.edit-row td { background: var(--user-bg); padding: 0.4rem 0.9rem 0.9rem; }
 .edit-person .checkbox { flex-direction: row; align-self: end; padding-bottom: 0.45rem; color: var(--text); font-weight: 400; }
 .edit-person .notice { margin: 0.75rem 0 0; }
 .person-form .actions { display: flex; gap: 0.5rem; }
-.person-form button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
-.person-form button.danger { background: var(--failed); color: #fff; }
+
+/* --- Buttons: one system. Action buttons are primary; add .secondary or .danger.
+   Links that act (Edit, Delete in a table) stay button.link. --- */
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button) {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.5rem 1rem; border: 1px solid var(--accent); border-radius: 8px;
+  background: var(--accent); color: var(--accent-text); font-weight: 600; line-height: 1.25;
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button):hover { filter: brightness(1.08); }
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button):focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button).secondary, .button.ghost { background: transparent; border-color: var(--border); color: var(--text); font-weight: 500; }
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button).secondary:hover, .button.ghost:hover { filter: none; border-color: var(--accent); }
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button).danger { background: var(--failed); border-color: var(--failed); color: #fff; }
+:is(.button, .upload, .composer button, .ticket button, .status-form button, .person-form button, .inline-form button, .notice > button):disabled, .upload.disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.upload { margin: 1rem 0; }
+.upload.disabled { cursor: wait; }
+.small-button, .notice > button { padding: 0.3rem 0.75rem; font-size: 0.875rem; }
+.notice > button { margin-left: 0.4rem; }
+
+/* --- Header: the theme switch sits in the user menu once signed in --- */
+.menu > button { width: 100%; text-align: left; padding: 0.7rem 1rem; border: none; background: none; cursor: pointer; }
+.menu > button:hover { background: var(--bg); }
+.menu-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+@media (max-width: 640px) {
+  /* Every link stays one tap away: the nav becomes a scrollable row under the bar. */
+  :root { --bar: 92px; }
+  .topbar { flex-wrap: wrap; align-content: center; row-gap: 0.5rem; }
+  .topbar:not(:has(nav)) { height: 53px; } /* signed out: no links, no second row */
+  .topbar nav { order: 3; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; gap: 1.1rem; }
+  .topbar nav a { white-space: nowrap; }
+}
