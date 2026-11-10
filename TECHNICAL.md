@@ -435,6 +435,7 @@ Every setting has a default, so no `.env` file is needed. Copy [.env.example](.e
   - `bash deploy/setup.sh` checks `sudo`, installs what minimal images lack (`curl`, `openssl`, `iptables`), opens ports 80 and 443 where needed, installs Docker, asks for the site login (stored as a bcrypt hash), writes `.env` (`COMPOSE_FILE`, an `sslip.io` address, a random database password) and starts the stack.
   - The production override publishes only Caddy, sets `COOKIE_SECURE=true`, and adds HTTPS through Let's Encrypt, HSTS and the site password.
 - **Updating a server:** `git pull && sudo docker compose up -d --build`. The schema upgrades itself on start.
+- **The project page** ([site/](site/)) is static HTML and CSS, with no scripts, and links to the live demo. [pages.yml](.github/workflows/pages.yml) publishes it to GitHub Pages when `site/` changes on `main`. It is separate from the app and changes nothing on the server.
 
 ## 18. Testing and CI
 
