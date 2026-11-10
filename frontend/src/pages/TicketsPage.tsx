@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { ApiError, changeTicketStatus, listTickets, type Ticket, type TicketStatus } from "../api";
 import { isAdmin, isStaff, useAuth } from "../session";
+import { timeAgo } from "../timeAgo";
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 
@@ -188,23 +189,29 @@ export default function TicketsPage() {
           <ul className="tickets">
             {shown.map((t) => (
               <li key={t.id} id={`ticket-${t.id}`} className={hash === `#ticket-${t.id}` ? "linked" : ""}>
-                <div className="ticket-head">
-                  <strong>
-                    #{t.id} {t.title}
-                  </strong>
-                  <span className={`status-pill ${t.status}`}>{STATUS_LABEL[t.status]}</span>
-                </div>
-                <div className="muted small">
-                  {t.user_name} · opened {dateFormat.format(new Date(t.created_at))}
-                </div>
-                <p className="asked">“{t.question}”</p>
-                {t.summary && <p>{t.summary}</p>}
-                <History ticket={t} />
-                {isAdmin(user) || (everyone && t.created_by !== user?.id) ? (
-                  <StatusForm key={t.updated_at} ticket={t} onSaved={replace} />
-                ) : (
-                  everyone && <p className="muted small">Your own ticket: your manager or an admin handles it.</p>
-                )}
+                <details open={hash === `#ticket-${t.id}`}>
+                  <summary className="ticket-row">
+                    <span className="ticket-title">
+                      <span className="muted">#{t.id}</span> {t.title}
+                    </span>
+                    <span className="muted small">{t.user_name}</span>
+                    <span className="muted small" title={dateFormat.format(new Date(t.created_at))}>
+                      {timeAgo(t.created_at)}
+                    </span>
+                    <span className={`status-pill ${t.status}`}>{STATUS_LABEL[t.status]}</span>
+                  </summary>
+                  <div className="ticket-body">
+                    <div className="muted small">Opened {dateFormat.format(new Date(t.created_at))}</div>
+                    <p className="asked">“{t.question}”</p>
+                    {t.summary && <p>{t.summary}</p>}
+                    <History ticket={t} />
+                    {isAdmin(user) || (everyone && t.created_by !== user?.id) ? (
+                      <StatusForm key={t.updated_at} ticket={t} onSaved={replace} />
+                    ) : (
+                      everyone && <p className="muted small">Your own ticket: your manager or an admin handles it.</p>
+                    )}
+                  </div>
+                </details>
               </li>
             ))}
           </ul>

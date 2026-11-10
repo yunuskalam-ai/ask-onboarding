@@ -188,9 +188,22 @@ mark { background: var(--mark); color: inherit; padding: 0.1rem 0; border-radius
 .ticket .notice { margin: 0; }
 
 /* --- Tickets page --- */
-ul.tickets { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.75rem; }
-ul.tickets li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
-.ticket-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+ul.tickets { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
+ul.tickets > li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.ticket-row { display: grid; grid-template-columns: auto 1fr auto auto 6.5rem; gap: 1rem; align-items: center; padding: 0.6rem 1rem; cursor: pointer; list-style: none; }
+.ticket-row::-webkit-details-marker { display: none; }
+.ticket-row::before { content: "▸"; color: var(--muted); margin-right: -0.5rem; transition: transform 0.15s; }
+details[open] > .ticket-row::before { transform: rotate(90deg); }
+.ticket-row .status-pill { justify-self: end; }
+.ticket-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-row:hover .ticket-title { color: var(--accent); }
+.ticket-body { padding: 0.7rem 1rem 0.9rem 2.1rem; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .ticket-row { grid-template-columns: auto 1fr auto auto; gap: 0.3rem 0.6rem; }
+  .ticket-title { grid-column: 2 / -1; white-space: normal; }
+  .ticket-row > :nth-child(2) { grid-column: 2; }
+  .ticket-body { padding-left: 1rem; }
+}
 ul.tickets p { margin: 0.5rem 0 0; }
 .asked { font-style: italic; }
 .badge.open { color: var(--processing); }
@@ -421,7 +434,7 @@ table.compact th, table.compact td { padding: 0.45rem 0.6rem; font-size: 0.9rem;
 .bell-more { display: block; margin: 0.6rem auto; font-size: 0.85rem; }
 
 /* A ticket opened from a notification is briefly highlighted. */
-ul.tickets li.linked { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+ul.tickets > li.linked { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
 
 /* --- Project docs (admins) --- */
 .docs-layout { flex: 1; display: grid; grid-template-columns: 230px minmax(0, 1fr); width: 100%; }
@@ -525,3 +538,15 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 .doc-markdown .cited { background: var(--user-bg); box-shadow: -0.6rem 0 0 var(--user-bg), -0.8rem 0 0 var(--accent); border-radius: 0 4px 4px 0; }
 .doc-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.925rem; line-height: 1.6; }
 .doc-title { font-weight: 600; }
+
+/* --- People: read-only rows, one edit form at a time --- */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.state-pill { font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.6rem; border-radius: 999px; border: 1px solid currentColor; color: var(--muted); white-space: nowrap; }
+.state-pill.on { color: var(--ready); }
+tr.editing td { background: var(--user-bg); }
+tr.edit-row td { background: var(--user-bg); padding: 0.4rem 0.9rem 0.9rem; }
+.edit-person .checkbox { flex-direction: row; align-self: end; padding-bottom: 0.45rem; color: var(--text); font-weight: 400; }
+.edit-person .notice { margin: 0.75rem 0 0; }
+.person-form .actions { display: flex; gap: 0.5rem; }
+.person-form button.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 400; }
+.person-form button.danger { background: var(--failed); color: #fff; }
