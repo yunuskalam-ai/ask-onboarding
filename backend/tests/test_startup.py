@@ -106,3 +106,11 @@ def test_api_startup_creates_the_schema_and_demo_users(monkeypatch, db, test_dat
         assert client.get("/api/health").status_code == 200
 
     assert {r["role"] for r in db.execute("SELECT role FROM users")} == {"employee", "manager", "admin"}
+
+
+def test_no_ip_location_database_is_only_logged(monkeypatch, caplog):
+    """The download is refused in tests (conftest): startup logs it and carries on."""
+    monkeypatch.setattr(startup, "settings", replace(startup.settings, seed_sample_docs=False))
+    monkeypatch.setattr(startup, "warm_up", lambda: None)
+    startup._run()
+    assert "No IP location database" in caplog.text

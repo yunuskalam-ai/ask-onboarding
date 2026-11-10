@@ -16,10 +16,13 @@ import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 from psycopg.types.json import Jsonb
 
+from app import client_info, geoip
+from app.config import settings
 from app.db import Connection, one
 
 Role = Literal["employee", "manager", "admin"]
@@ -170,8 +173,17 @@ def end_session(conn: Connection, token: str) -> None:
 
 
 def record(conn: Connection, actor: User | None, action: str, **details) -> None:
-    """Add a line to the audit log: who (actor) did what (action), with details."""
+    """Add a line to the audit log: who (actor) did what (action), with details,
+    and from where: the request's IP, its location and the browser string."""
+    client = client_info.current()
     conn.execute(
-        "INSERT INTO audit_log (user_id, action, details) VALUES (%s, %s, %s)",
-        (actor.id if actor else None, action, Jsonb(details)),
+        "INSERT INTO audit_log (user_id, action, details, ip, location, user_agent) VALUES (%s, %s, %s, %s, %s, %s)",
+        (
+            actor.id if actor else None,
+            action,
+            Jsonb(details),
+            client.ip,
+            geoip.location(client.ip, Path(settings.geoip_path)),
+            client.user_agent,
+        ),
     )

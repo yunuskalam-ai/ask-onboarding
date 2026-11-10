@@ -56,6 +56,7 @@ class Settings:
     answer_effort: Effort
     cookie_secure: bool  # send the session cookie over HTTPS only (true when deployed)
     seed_demo_users: bool  # create the demo accounts on first start
+    geoip_path: str  # the offline IP-to-city database (downloaded on start; see app/geoip.py)
 
 
 def load_settings() -> Settings:
@@ -82,6 +83,7 @@ def load_settings() -> Settings:
         answer_effort=_choice("ANSWER_EFFORT", "low", ("low", "medium", "high", "xhigh", "max")),
         cookie_secure=env("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
         seed_demo_users=env("SEED_DEMO_USERS", "true").lower() in ("1", "true", "yes"),
+        geoip_path=env("GEOIP_PATH", str(_ROOT / "data" / "geoip" / "dbip-city-lite.mmdb")),
     )
 
 
