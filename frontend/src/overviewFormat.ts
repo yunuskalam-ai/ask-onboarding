@@ -55,6 +55,12 @@ const STATUS_WORD: Record<string, string> = {
 
 const text = (value: unknown) => (typeof value === "string" || typeof value === "number" ? String(value) : "?");
 
+/** "Chrome 131 on Windows", or whichever half is known, or a dash. */
+export function describeClient(entry: Pick<AuditEntry, "browser" | "os">): string {
+  if (entry.browser && entry.os) return `${entry.browser} on ${entry.os}`;
+  return entry.browser ?? entry.os ?? "–";
+}
+
 /** One readable line per audit entry, e.g. "Changed sam@… from employee to manager". */
 export function describeAudit(entry: AuditEntry): string {
   const d = entry.details;
