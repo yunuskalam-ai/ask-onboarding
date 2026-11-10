@@ -8,6 +8,7 @@ export type DocumentStatus = "processing" | "ready" | "failed";
 export type DocumentInfo = {
   id: number;
   filename: string;
+  title: string;
   file_type: "pdf" | "md" | "txt";
   status: DocumentStatus;
   error: string | null;
@@ -18,6 +19,7 @@ export type DocumentInfo = {
 export type DocumentText = {
   id: number;
   filename: string;
+  title: string;
   file_type: "pdf" | "md" | "txt";
   pages: { number: number | null; text: string }[];
 };
@@ -26,6 +28,7 @@ export type Citation = {
   n: number;
   document_id: number;
   filename: string;
+  title: string; // the document's readable title
   page: number | null;
   start_char: number;
   end_char: number;

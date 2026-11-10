@@ -69,6 +69,7 @@ def answer_events(
             "n": n,
             "document_id": hit.document_id,
             "filename": hit.filename,
+            "title": hit.title or hit.filename,
             "page": hit.page,
             "start_char": hit.start_char,
             "end_char": hit.end_char,

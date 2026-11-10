@@ -29,6 +29,7 @@ Conn = Annotated[Connection, Depends(get_conn)]
 class DocumentOut(BaseModel):
     id: int
     filename: str
+    title: str
     file_type: Literal["pdf", "md", "txt"]
     status: Literal["processing", "ready", "failed"]
     error: str | None
@@ -117,6 +118,7 @@ class PageOut(BaseModel):
 class DocumentTextOut(BaseModel):
     id: int
     filename: str
+    title: str
     file_type: Literal["pdf", "md", "txt"]
     pages: list[PageOut]  # citation offsets point into these texts
 
@@ -125,7 +127,8 @@ class DocumentTextOut(BaseModel):
 def get_document_text(document_id: int, user: SignedIn, conn: Conn) -> DocumentTextOut:
     """The extracted text of a ready document, for showing a cited passage."""
     row = conn.execute(
-        "SELECT id, filename, file_type, pages FROM documents WHERE id = %s AND status = 'ready'",
+        "SELECT id, filename, coalesce(title, filename) AS title, file_type, pages FROM documents "
+        "WHERE id = %s AND status = 'ready'",
         (document_id,),
     ).fetchone()
     if row is None:
@@ -175,7 +178,7 @@ def _get_document(conn: Connection, document_id: int) -> DocumentOut:
 
 
 _SELECT = """
-    SELECT d.id, d.filename, d.file_type, d.status, d.error, d.updated_at,
+    SELECT d.id, d.filename, coalesce(d.title, d.filename) AS title, d.file_type, d.status, d.error, d.updated_at,
            (SELECT count(*) FROM chunks c WHERE c.document_id = d.id) AS chunk_count
     FROM documents d
 """

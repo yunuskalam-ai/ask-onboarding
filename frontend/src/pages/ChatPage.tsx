@@ -129,12 +129,12 @@ export default function ChatPage() {
                 )}
                 {m.state === "done" && m.reason !== "answered" && <TicketOffer question={m.question} />}
                 {m.state === "done" && m.citations.length > 0 && (
-                  <div className="sources">
-                    Sources:{" "}
+                  <div className="sources" aria-label="Sources">
                     {m.citations.map((c) => (
-                      <button key={c.n} className="link" onClick={() => setSource(c)}>
-                        [{c.n}] {c.filename}
-                        {c.page ? ` p.${c.page}` : ""}
+                      <button key={c.n} className="source-tag" onClick={() => setSource(c)} title={c.filename}>
+                        <span className="source-n">{c.n}</span>
+                        {c.title}
+                        {c.page ? <span className="muted"> · p.{c.page}</span> : null}
                       </button>
                     ))}
                   </div>

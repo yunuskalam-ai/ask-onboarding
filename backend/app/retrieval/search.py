@@ -50,6 +50,7 @@ class Hit:
     end_char: int
     text: str
     score: float  # cosine similarity, in both modes
+    title: str = ""  # the document's readable title
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,7 @@ class Retrieval:
 
 _COLUMNS = """
     c.id AS chunk_id, c.document_id, d.filename, c.page,
-    c.start_char, c.end_char, c.text
+    c.start_char, c.end_char, c.text, coalesce(d.title, d.filename) AS title
 """
 
 _VECTOR_SQL = f"""
