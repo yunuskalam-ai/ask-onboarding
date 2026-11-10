@@ -8,9 +8,9 @@ Every number below comes from a real run on 10 Nov 2026 (last updated with the c
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **471 passed**, 0 failed |
+| Backend tests | pytest | **509 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
-| Frontend tests | vitest | **108 passed**, 0 failed |
+| Frontend tests | vitest | **112 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
 | Python types | mypy | 0 errors in 36 files |
@@ -183,6 +183,26 @@ Expected result means the server's answer. Every test listed passed in the run a
 | A crash inside the answer stream | still logged | `test_a_crash_inside_the_stream_is_still_logged` |
 | An actor deleted after acting | the audit entry stays, as "Deleted user" | `test_the_audit_log_names_the_actor_and_survives_their_deletion` |
 
+### Audit log: IP, location and device ([test_audit_context.py](backend/tests/test_audit_context.py))
+
+| Attempt or situation | Expected | Test |
+| --- | --- | --- |
+| A client reaching the API directly sends `X-Real-IP: 94.200.12.7` | **ignored**: its real address is recorded | `test_a_client_reaching_the_api_directly_cannot_fake_its_ip`, `test_client_ip_believes_x_real_ip_only_from_a_private_peer` |
+| A junk `X-Real-IP`, a peer that isn't an address | ignored / no IP | same |
+| A download that isn't a database (an HTML error page) | refused; **the old database stays** | `test_a_bad_download_leaves_the_old_database_in_place` |
+| This month's file not published yet | last month's is used | `test_a_missing_database_is_downloaded_falling_back_to_last_month` |
+| No database, or a damaged one | no location, and sign-in still works | `test_no_database_means_no_location_not_an_error`, `test_a_damaged_database_means_no_location_not_an_error` |
+| Office and local addresses (10.x, 192.168.x, 127.0.0.1, ::1, fe80::) | "Private network", without any database | `test_office_and_local_addresses_are_a_private_network_without_any_database` |
+| 13 browser strings, from Chrome on Windows to an iPad, curl and nonsense | the right browser, system and device; unknown is None, never a guess | `test_describe_reads_common_browsers_and_never_guesses` |
+| The startup download fails | logged; the API keeps starting | `test_no_ip_location_database_is_only_logged` |
+
+**Tests never download.** An autouse fixture in conftest makes any download fail and points the app at an empty folder.
+
+**Checked live:**
+- **Real lookups** with the real database (November 2026): 94.200.12.7 → Warisan, UAE; 8.8.8.8 → Mountain View, US; 81.2.69.142 → London, UK; an IPv6 address → Frankfurt, Germany.
+- **Through Caddy 2.10.2 and nginx**, a forged `X-Forwarded-For: 8.8.8.8` was dropped and the real peer was recorded.
+- **DB-IP refuses Python's default User-Agent (403),** which the first live run caught. The app now names itself.
+
 ### Notifications ([test_notifications.py](backend/tests/test_notifications.py))
 
 | Attempt | Expected | Test |
@@ -311,9 +331,10 @@ From `pytest --cov` (statements and branches):
 
 | Module | Coverage | Not covered |
 | --- | --- | --- |
-| `app/auth.py`, `app/security.py`, `app/question_log.py`, `app/notifications.py`, `app/runbook.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/docs.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
+| `app/auth.py`, `app/security.py`, `app/client_info.py`, `app/useragent.py`, `app/question_log.py`, `app/notifications.py`, `app/runbook.py`, `app/api/admin.py`, `app/api/notifications.py`, `app/api/docs.py`, `app/api/users.py`, `app/api/chat.py`, `app/api/retrieve.py`, `app/chat/prompt.py`, `app/ingest/*` (parsers, chunker, embedder), `app/retrieval/search.py` | 100% | – |
 | `app/api/tickets.py` | 99% | the default ticket-drafter getter (replaced in tests) |
-| `app/api/auth.py`, `app/startup.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py` | 96–98% | default dependency getters, one log-only branch |
+| `app/api/auth.py`, `app/main.py`, `app/deps.py`, `app/ingest/service.py`, `app/chat/service.py`, `app/geoip.py` | 96–98% | default dependency getters, one log-only branch, the database reader's cache hit |
+| `app/startup.py` | 84% | log-only lines after a successful backfill or prune, and their failure branches |
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
