@@ -362,7 +362,8 @@ The page renders Markdown with `react-markdown` and `remark-gfm`, which build Re
 - **Answers stream** through `fetch` and an SSE parser ([sse.ts](frontend/src/sse.ts)). The typing indicator shows three animated dots and a status that moves on over time, and uses a calm fade under `prefers-reduced-motion`.
 - **Themes:** Light, Dark or System, stored in the browser. `public/theme-init.js` applies the theme before the first paint (a file, not inline code, because of the CSP).
 - **CSP-friendly:** there are no inline scripts and no `style=""` attributes in the HTML. Dynamic widths are set through the DOM style API, which the CSP allows.
-- **Pure helpers** are kept apart from components and unit-tested: `redirect.ts`, `session.ts`, `overviewFormat.ts`, `timeAgo.ts`, `docsLinks.ts`, `answerParts.ts`, `sse.ts`.
+- **Edits are explicit:** the People table is read-only; **Edit** opens one form per person, and Save sends a single PATCH with only the changed fields ([personEdit.ts](frontend/src/personEdit.ts)). Deactivating shows a warning and a red button before anything is sent. Tickets are a compact `<details>` list; a `#ticket-<id>` link from a notification opens and scrolls to that one.
+- **Pure helpers** are kept apart from components and unit-tested: `redirect.ts`, `session.ts`, `overviewFormat.ts`, `timeAgo.ts`, `docsLinks.ts`, `answerParts.ts`, `sse.ts`, `citedPassage.ts`, `personEdit.ts`.
 
 ## 15. Security model
 
