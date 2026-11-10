@@ -165,7 +165,6 @@ button.cite:hover { background: var(--accent); color: var(--accent-text); }
 .source-panel { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 53px); border-left: 1px solid var(--border); background: var(--surface); }
 .source-panel header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
 .source-panel header strong { overflow-wrap: anywhere; }
-.open-file { padding: 0.5rem 1rem 0; color: var(--accent); font-size: 0.875rem; }
 .source-body { flex: 1; overflow-y: auto; padding: 1rem; }
 .source-body pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.925rem; }
 mark { background: var(--mark); color: inherit; padding: 0.1rem 0; border-radius: 2px; }
@@ -503,3 +502,26 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; text-decoration
 /* --- Document delete --- */
 .doc-actions { text-align: right; white-space: nowrap; }
 .doc-actions .confirm { font-size: 0.85rem; white-space: normal; }
+
+/* --- Sources: tags under an answer, and the source panel --- */
+.sources { gap: 0.4rem; }
+.source-tag { display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%; padding: 0.25rem 0.65rem 0.25rem 0.3rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text); font-size: 0.85rem; cursor: pointer; text-align: left; }
+.source-tag:hover { border-color: var(--accent); }
+.source-n { flex: none; display: inline-grid; place-items: center; min-width: 1.3rem; height: 1.3rem; padding: 0 0.25rem; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 0.72rem; font-weight: 700; }
+.source-heading { display: flex; align-items: flex-start; gap: 0.6rem; min-width: 0; }
+.source-heading .small { margin: 0; overflow-wrap: anywhere; }
+.icon-button { flex: none; width: 2rem; height: 2rem; border: none; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.icon-button:hover { background: var(--bg); color: var(--text); }
+.source-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); font-size: 0.875rem; }
+.doc-markdown { line-height: 1.6; font-size: 0.95rem; }
+.doc-markdown h1 { font-size: 1.35rem; margin: 0 0 0.75rem; }
+.doc-markdown h2 { font-size: 1.1rem; margin: 1.3rem 0 0.4rem; }
+.doc-markdown h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
+.doc-markdown p, .doc-markdown ul, .doc-markdown ol { margin: 0.4rem 0; }
+.doc-markdown table { border-collapse: collapse; margin: 0.6rem 0; font-size: 0.9rem; }
+.doc-markdown th, .doc-markdown td { border: 1px solid var(--border); padding: 0.3rem 0.5rem; text-align: left; }
+.doc-markdown code { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 0.25rem; }
+/* The cited passage: its blocks get a soft band with an accent edge, the exact words a highlight. */
+.doc-markdown .cited { background: var(--user-bg); box-shadow: -0.6rem 0 0 var(--user-bg), -0.8rem 0 0 var(--accent); border-radius: 0 4px 4px 0; }
+.doc-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.925rem; line-height: 1.6; }
+.doc-title { font-weight: 600; }

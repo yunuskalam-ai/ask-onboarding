@@ -146,7 +146,10 @@ export default function DocumentsPage() {
           <tbody>
             {docs.map((d) => (
               <tr key={d.id}>
-                <td>{d.filename}</td>
+                <td>
+                  <div className="doc-title">{d.title}</div>
+                  <div className="muted small">{d.filename}</div>
+                </td>
                 <td>{d.file_type.toUpperCase()}</td>
                 <td>
                   <span className={`badge ${d.status}`}>{d.status}</span>
