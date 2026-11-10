@@ -6,6 +6,8 @@ Ask Onboarding is a RAG assistant that answers new employees' questions from com
 
 Everything runs locally. No API key is needed.
 
+**Project page:** https://yunuskalam-ai.github.io/ask-onboarding/ (a public overview with screenshots).
+
 **Live demo:** https://34-18-56-53.sslip.io. It's password-protected; ask the author for the login. It runs on a 4-CPU Google Cloud server without a GPU, so answers take about 10–20 s. It's set up with [deploy/README.md](deploy/README.md).
 
 ## Phase 1 and Phase 2
@@ -97,7 +99,8 @@ npm test
 | `db/init.sql` | Enables the pgvector extension |
 | `deploy/` | Public deployment: HTTPS and password (Caddy), production compose override, setup script |
 | `docs/` | Screenshots and the architecture diagram |
-| `.github/workflows/` | CI |
+| `site/` | The public project page, published to GitHub Pages |
+| `.github/workflows/` | CI, and publishing the project page |
 
 ## Sample data
 

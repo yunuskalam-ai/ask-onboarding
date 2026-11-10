@@ -1,0 +1,105 @@
+/* The project page on GitHub Pages. Same colours as the app (frontend/src/index.css). */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #656d76;
+  --border: #d8dee4;
+  --accent: #2f6f4f;
+  --accent-text: #ffffff;
+  --soft: #e8f1ec;
+  --role-employee: #2b6cb0;
+  --role-manager: #a36200;
+  --role-admin: #7b3fb0;
+  --shadow: 0 10px 30px rgba(31, 35, 40, 0.1);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181c;
+    --surface: #1d2126;
+    --text: #e6e8eb;
+    --muted: #9aa3ad;
+    --border: #343a42;
+    --accent: #5fb38a;
+    --accent-text: #0d1a13;
+    --soft: #1f3329;
+    --role-employee: #7fb4e0;
+    --role-manager: #e0b060;
+    --role-admin: #c79be8;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+section { scroll-margin-top: 4rem; } /* clear the sticky bar when jumping to a section */
+body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
+a { color: var(--accent); }
+h1, h2, h3 { line-height: 1.2; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+.bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 1.5rem; padding: 0.8rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--text); text-decoration: none; white-space: nowrap; }
+.mark { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 6px; background: var(--accent); color: var(--accent-text); }
+.bar nav { margin-left: auto; display: flex; gap: 1.1rem; overflow-x: auto; }
+.bar nav a { color: var(--muted); text-decoration: none; white-space: nowrap; }
+.bar nav a:hover { color: var(--text); }
+
+.hero { max-width: 1200px; margin: 0 auto; padding: 3.5rem 1.25rem 2.5rem; display: grid; grid-template-columns: 1fr 1.15fr; gap: 3rem; align-items: center; }
+.eyebrow { margin: 0 0 0.6rem; color: var(--accent); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; }
+h1 { font-size: clamp(2rem, 4vw, 2.8rem); margin: 0 0 1rem; }
+.lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 1.5rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.button { display: inline-flex; align-items: center; padding: 0.6rem 1.15rem; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: var(--accent-text); font-weight: 600; text-decoration: none; }
+.button:hover { filter: brightness(1.08); }
+.button.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+.button.ghost:hover { filter: none; border-color: var(--accent); }
+.note { margin: 1rem 0 0; font-size: 0.875rem; color: var(--muted); }
+
+.shot { margin: 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); background: var(--surface); }
+.shot figcaption { margin-top: 0.7rem; color: var(--muted); font-size: 0.95rem; }
+.shot figcaption strong { color: var(--text); }
+
+.band { max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.25rem; border-top: 1px solid var(--border); }
+.band h2 { margin: 0 0 1rem; font-size: 1.6rem; }
+.band-lead { color: var(--muted); margin: 0 0 1.25rem; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.steps li, .role, .results li, .links a { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; }
+.steps h3 { margin: 0.6rem 0 0.3rem; }
+.steps p { margin: 0; color: var(--muted); }
+.n { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 999px; background: var(--soft); color: var(--accent); font-weight: 700; }
+
+.results { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.results strong { display: block; font-size: 1.7rem; color: var(--accent); }
+.results span { color: var(--muted); font-size: 0.95rem; }
+
+.tour { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+
+.roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.role { border-top: 4px solid var(--role-employee); }
+.role.manager { border-top-color: var(--role-manager); }
+.role.admin { border-top-color: var(--role-admin); }
+.role h3 { margin: 0 0 0.5rem; }
+.role ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+
+.links { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.links a { display: flex; flex-direction: column; gap: 0.2rem; text-decoration: none; color: var(--text); height: 100%; }
+.links a:hover { border-color: var(--accent); }
+.links span { color: var(--muted); font-size: 0.95rem; }
+
+pre { margin: 0 0 1rem; padding: 1rem 1.2rem; overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+p code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.35rem; font-size: 0.9em; }
+
+.foot { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.25rem 2.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: 2rem; gap: 2rem; }
+  .steps, .roles, .tour, .links { grid-template-columns: 1fr; }
+  .results { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .bar nav a:not(:last-child) { display: none; } /* keep the brand and GitHub on a phone */
+}

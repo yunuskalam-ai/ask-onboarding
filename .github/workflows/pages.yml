@@ -1,0 +1,33 @@
+# Publishes the project page (site/) to GitHub Pages when it changes on main.
+# It only uploads static files: the app itself runs on the server (deploy/).
+name: Project page
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_dispatch: # publish by hand from the Actions tab
+
+permissions:
+  contents: read
+  pages: write # publish to Pages
+  id-token: write # prove to Pages that this workflow is the publisher
+
+concurrency:
+  group: pages
+  cancel-in-progress: false # never cut a publish off halfway
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
