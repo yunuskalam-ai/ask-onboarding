@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   ApiError,
   addDepartment,
@@ -10,9 +10,9 @@ import {
   renameDepartment,
   type Department,
   type Person,
-  type PersonChange,
   type Role,
 } from "../api";
+import { changesFrom, draftOf, type Draft } from "../personEdit";
 import { ROLE_LABEL, initials, useAuth } from "../session";
 import { buildTree, type TreeNode } from "../teamTree";
 
@@ -125,6 +125,102 @@ function AddPersonForm({ people, departments, onAdded }: { people: Person[]; dep
   );
 }
 
+/** One person's role, department, manager and status, saved together or not at all. */
+function EditPerson({
+  person,
+  people,
+  departments,
+  self,
+  onSaved,
+  onCancel,
+}: {
+  person: Person;
+  people: Person[];
+  departments: Department[];
+  self: boolean;
+  onSaved: (done: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>(() => draftOf(person));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const change = changesFrom(person, draft);
+  const deactivating = change.active === false;
+  const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await changePerson(person.id, change);
+      onSaved(
+        deactivating
+          ? `${person.name} is now inactive and has been signed out.`
+          : change.active
+            ? `${person.name} is active again.`
+            : `${person.name}'s changes were saved.`,
+      );
+    } catch (err) {
+      setError(message(err, "Could not save the change."));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="person-form edit-person" onSubmit={save} aria-label={`Edit ${person.name}`}>
+      <div className="form-grid">
+        <label>
+          Role
+          <select value={draft.role} onChange={(e) => set({ role: e.target.value as Role })} disabled={saving}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Department
+          <DepartmentSelect label="Department" value={draft.department_id} departments={departments} onChange={(id) => set({ department_id: id })} disabled={saving} />
+        </label>
+        <label>
+          Reports to
+          <ManagerSelect label="Reports to" value={draft.manager_id} people={people} exclude={person.id} onChange={(id) => set({ manager_id: id })} disabled={saving} />
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={draft.active}
+            onChange={(e) => set({ active: e.target.checked })}
+            disabled={saving || self}
+            title={self ? "You can't deactivate yourself" : undefined}
+          />
+          Active (can sign in)
+        </label>
+      </div>
+      {deactivating && (
+        <div className="notice warning" role="alert">
+          {person.name} will be signed out everywhere straight away and can't sign in until made active again. Their tickets stay.
+        </div>
+      )}
+      {error && (
+        <div className="notice error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="actions">
+        <button type="submit" className={deactivating ? "danger" : ""} disabled={saving || Object.keys(change).length === 0}>
+          {saving ? "Saving…" : deactivating ? "Deactivate and save" : "Save changes"}
+        </button>
+        <button type="button" className="secondary" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function DepartmentsPanel({ departments, onChanged }: { departments: Department[]; onChanged: () => void }) {
   const [name, setName] = useState("");
   const [editing, setEditing] = useState<{ id: number; name: string } | null>(null);
@@ -232,7 +328,7 @@ export default function PeoplePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
-  const [saving, setSaving] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<number | "all">("all");
   const [showInactive, setShowInactive] = useState(false);
@@ -248,20 +344,16 @@ export default function PeoplePage() {
 
   useEffect(reload, [reload]);
 
-  async function update(person: Person, change: PersonChange, done: string) {
-    setSaving(person.id);
-    setError(null);
+  function startEditing(id: number) {
+    setEditing(id);
     setSaved(null);
-    try {
-      await changePerson(person.id, change);
-      setSaved(done);
-      reload(); // reports counts, departments and the tree all follow
-      if (person.id === me?.id) await refresh(); // your own role changed: menus and pages follow
-    } catch (err) {
-      setError(message(err, "Could not save the change."));
-    } finally {
-      setSaving(null);
-    }
+  }
+
+  async function onSaved(person: Person, done: string) {
+    setEditing(null);
+    setSaved(done);
+    reload(); // reports counts, departments and the tree all follow
+    if (person.id === me?.id) await refresh(); // your own role changed: menus and pages follow
   }
 
   const shown = useMemo(() => {
@@ -276,14 +368,13 @@ export default function PeoplePage() {
 
   const tree = useMemo(() => buildTree(people ?? []), [people]);
   const inactiveCount = people?.filter((p) => !p.active).length ?? 0;
-  const busy = saving !== null;
 
   return (
     <section className="page wide">
       <h1>People</h1>
       <p className="muted">
         Add people, set their role, department and manager, and deactivate anyone who has left. A manager sees and
-        handles the tickets of everyone below them; admins see everything. Changes apply straight away.
+        handles the tickets of everyone below them; admins see everything. Choose Edit to change someone.
       </p>
 
       {error && (
@@ -330,80 +421,62 @@ export default function PeoplePage() {
                     <th>Reports to</th>
                     <th className="num">Reports</th>
                     <th>Status</th>
+                    <th>
+                      <span className="visually-hidden">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {shown.map((p) => (
-                    <tr key={p.id} className={p.active ? "" : "inactive"}>
-                      <td>
-                        <div className="person">
-                          <span className={`avatar role-${p.role}`}>{initials(p.name)}</span>
-                          <span className="account-who">
-                            <strong>
-                              {p.name} {p.id === me?.id && <span className="muted small">(you)</span>}
-                            </strong>
-                            <span className="muted small">{p.email}</span>
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <select
-                          aria-label={`Role for ${p.name}`}
-                          value={p.role}
-                          disabled={busy}
-                          onChange={(e) => {
-                            const role = e.target.value as Role;
-                            update(p, { role }, `${p.name} is now ${ROLE_LABEL[role].toLowerCase()}.`);
-                          }}
-                        >
-                          {ROLES.map((r) => (
-                            <option key={r} value={r}>
-                              {ROLE_LABEL[r]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <DepartmentSelect
-                          label={`Department for ${p.name}`}
-                          value={p.department?.id ?? null}
-                          departments={departments}
-                          disabled={busy}
-                          onChange={(id) => update(p, { department_id: id }, `${p.name}'s department was updated.`)}
-                        />
-                      </td>
-                      <td>
-                        <ManagerSelect
-                          label={`Manager for ${p.name}`}
-                          value={p.manager?.id ?? null}
-                          people={people}
-                          exclude={p.id}
-                          disabled={busy}
-                          onChange={(id) => update(p, { manager_id: id }, `${p.name}'s manager was updated.`)}
-                        />
-                      </td>
-                      <td className="num">{p.reports}</td>
-                      <td>
-                        <button
-                          className={`status-toggle ${p.active ? "active" : ""}`}
-                          disabled={busy || p.id === me?.id}
-                          title={p.id === me?.id ? "You can't deactivate yourself" : undefined}
-                          onClick={() =>
-                            update(
-                              p,
-                              { active: !p.active },
-                              p.active ? `${p.name} is now inactive and has been signed out.` : `${p.name} is active again.`,
-                            )
-                          }
-                        >
-                          {p.active ? "Active" : "Inactive"}
-                        </button>
-                      </td>
-                    </tr>
+                    <Fragment key={p.id}>
+                      <tr className={[p.active ? "" : "inactive", editing === p.id ? "editing" : ""].join(" ").trim()}>
+                        <td>
+                          <div className="person">
+                            <span className={`avatar role-${p.role}`}>{initials(p.name)}</span>
+                            <span className="account-who">
+                              <strong>
+                                {p.name} {p.id === me?.id && <span className="muted small">(you)</span>}
+                              </strong>
+                              <span className="muted small">{p.email}</span>
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`role-pill role-${p.role}`}>{ROLE_LABEL[p.role]}</span>
+                        </td>
+                        <td>{p.department?.name ?? <span className="muted">None</span>}</td>
+                        <td>{p.manager?.name ?? <span className="muted">Nobody</span>}</td>
+                        <td className="num">{p.reports}</td>
+                        <td>
+                          <span className={`state-pill ${p.active ? "on" : ""}`}>{p.active ? "Active" : "Inactive"}</span>
+                        </td>
+                        <td className="num">
+                          {editing !== p.id && (
+                            <button className="link" onClick={() => startEditing(p.id)} aria-label={`Edit ${p.name}`}>
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {editing === p.id && (
+                        <tr className="edit-row">
+                          <td colSpan={7}>
+                            <EditPerson
+                              person={p}
+                              people={people}
+                              departments={departments}
+                              self={p.id === me?.id}
+                              onSaved={(done) => onSaved(p, done)}
+                              onCancel={() => setEditing(null)}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                   {shown.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="muted">
+                      <td colSpan={7} className="muted">
                         Nobody matches.
                       </td>
                     </tr>
