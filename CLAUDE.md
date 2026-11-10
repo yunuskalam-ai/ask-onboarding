@@ -12,7 +12,7 @@ A RAG take-home (employee Q&A over company docs) extended in Phase 2. Start with
 4. **Goal-driven:** turn tasks into checks (a failing test first), plan steps with a "verify" each, loop until verified.
 
 ## How we work
-- **One branch and one PR per feature.** The user reviews and merges on GitHub. Never push to `main`.
+- **One branch and one PR per feature, always based on `main`.** The user reviews and merges on GitHub. Never push to `main`. Never stack PRs on other branches: GitHub doesn't retarget them here, so they merge into the feature branch, not `main`.
 - **Small commits** that each build. Messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; PR bodies end with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - **Docs move with code:** a feature PR also updates TECHNICAL.md, GUIDE.md (plain language), TESTING.md (numbers and negative tests) and, if it changes the big picture, ARCHITECTURE.md. ARCHITECTURE.md must stay within the brief's 1-3 pages.
 - **Every new rule gets a negative test.** Prove a protection works by removing it and watching the test fail.

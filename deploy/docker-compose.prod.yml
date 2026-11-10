@@ -6,7 +6,7 @@
 #   - Only Caddy is reachable from the internet (ports 80 and 443). The
 #     database, the API and Ollama are reachable only inside Docker's network.
 #   - Caddy adds HTTPS (a free Let's Encrypt certificate) and a password,
-#     because the app has no login and anyone could otherwise upload files.
+#     because the app's demo sign-in has no passwords: anyone could pick "Admin".
 services:
   db:
     ports: !reset []

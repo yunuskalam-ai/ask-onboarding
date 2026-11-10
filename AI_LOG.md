@@ -10,7 +10,9 @@ How AI tools were used to build Ask Onboarding, where they were wrong, and how t
 | **Claude Docs** | The BRD and project plan document, written at the start |
 | **qwen2.5:3b via Ollama** | The product's own answering model (not a development tool) |
 
-The work went one phase per branch, with one pull request per phase: 11 phases from setup to docs. Every PR was reviewed and merged by me on GitHub. The UI was checked by hand in a browser, because the assistant had no browser.
+**Phase 1** (the brief) went one phase per branch, with one pull request per phase: 11 phases from setup to docs. **Phase 2** (refinements I asked for after that) followed the same rule: one feature per branch and pull request (#18 to #34). Every PR was reviewed and merged by me on GitHub.
+
+In Phase 1 I checked the UI by hand in a browser. In Phase 2 the assistant also drove a headless Edge browser itself: it read every page for console and security-policy errors, and took screenshots to compare before and after each UI change.
 
 ## Key prompts
 
@@ -22,6 +24,14 @@ Quoted with the spelling tidied up.
 4. **My answer when the assistant asked how to read "Ticket tool call" in the brief:** "LLM tool call + confirm". This was my choice for FR-10: the model drafts the ticket through a real tool call, and a person approves it before saving.
 5. *"Can we do any other part while this download is ongoing?"* The frontend was built while the Ollama image downloaded on a slow connection.
 6. *"Put these architecture answers and a diagram, and complete the next steps"*, with the brief's six questions pasted in. This produced ARCHITECTURE.md, and the check of question 4 found a real bug (below).
+
+**Phase 2:**
+
+7. A screenshot of another team's app, with *"take the inspiration, as our design must be unique and uncopied"*. This started the home page, sign-in and the three roles. I chose a no-password demo sign-in.
+8. *"Ensure the code quality, security, testing are top notch, it must also include negative testing and its result."* This produced the security hardening, CI with a coverage floor, and [TESTING.md](TESTING.md).
+9. *"The admin should receive any system, app, database failure/error"*, and later *"the error should also suggest the solution in real time."* These produced notifications, admin alerts and the alert pages with fix steps.
+10. *"Whole web is sloppy, I need a UI/UX audit."* The assistant listed 8 problems, with screenshots, and fixed them in three PRs.
+11. *"In the audit log table let's also add the IP, system, device, location."* I chose an offline location database, so no employee IP is sent anywhere.
 
 ## Where the AI was wrong, and how it was caught
 
@@ -39,6 +49,14 @@ Quoted with the spelling tidied up.
 | 10 | When the LLM was down, **opening a ticket failed** too | Writing ARCHITECTURE.md question 4, then stopping Ollama to check | The draft falls back to the question, and services restart automatically |
 | 11 | Small chunks broke a retrieval test | Investigated instead of loosening the test: the "car parking" chunk lost its LONDON heading | Measured the tradeoff (hit@1 15→14 of 16, hit@5 unchanged), changed the test to top 3, and explained why. Hybrid search later restored rank 1 |
 | 12 | Code-quality slips: a pointless monkeypatch, a too-clever comma expression, type annotations built by a function | Self-review before committing | Rewritten plainly |
+| 13 | A firewall step in the server setup script was "fixed" by an edit that **silently never applied** | Running the script on the real server | Every scripted edit now asserts it matched exactly once |
+| 14 | nginx forwarded the host without its port, so the new cross-site check refused **every** same-site request | Testing through nginx, not only the API | nginx forwards `$http_host` |
+| 15 | A test ran against **my real development database** | CI, whose database is empty | A guard makes any test that forgets the test database fail |
+| 16 | The Overview counted days in UTC: a question at 00:30 in Dubai landed on the previous day | Looking at a screenshot | Days follow the viewer's time zone, tested in three zones |
+| 17 | A commit message described a change that wasn't in the commit | Reviewing the pull request before merging | A follow-up commit with the missing change |
+| 18 | Two "stacked" PRs merged into feature branches instead of `main` | Checking `main` after I said "merged" | A catch-up PR; every PR now targets `main` |
+| 19 | A startup test **downloaded the real 127 MB location database** | The file appearing on disk during a test run | Tests now refuse any download |
+| 20 | The location database download failed with 403 on its first live run | The live run's log: the site blocks Python's default client name | The app names itself in the request |
 
 ## What I decided and did myself
 
@@ -46,6 +64,7 @@ Quoted with the spelling tidied up.
 - Chose the ticket design: a model tool call plus human confirmation.
 - Created the GitHub repository, installed WSL and Docker Desktop, and reviewed and merged every pull request.
 - Checked the UI by hand: asking questions, clicking citations, creating a ticket.
+- **Phase 2:** asked for every refinement; chose a no-password demo sign-in, managers seeing only their own team's tickets, and an offline location database for the audit log; picked Google Cloud for the demo server after the free tiers elsewhere ran out; set up the server myself in the browser's SSH window; and asked for the final UI and documentation audits.
 
 ## In my own words
 
