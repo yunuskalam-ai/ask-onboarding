@@ -255,3 +255,36 @@ def test_questions_are_counted_on_the_viewers_local_day(client, db, tz):
 def test_unknown_time_zones_are_rejected(client, db, tz):
     sign_in_as(client, db, "admin")
     assert client.get("/api/admin/overview", params={"tz": tz}).status_code == 422
+
+
+def test_every_audited_action_has_a_sentence_in_the_overview():
+    """The Overview turns each audit action into a sentence (frontend/src/overviewFormat.ts).
+    A new record(..., "action") without a matching case would show its raw name, as
+    "user.change" once did. Skipped where the frontend isn't there (the API image)."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    display = root / "frontend" / "src" / "overviewFormat.ts"
+    if not display.exists():
+        pytest.skip("the frontend source isn't in this checkout")
+    source = "".join(p.read_text(encoding="utf-8") for p in (root / "backend" / "app").rglob("*.py"))
+    recorded = set(re.findall(r'record\(\s*conn,\s*\w+,\s*"([\w.]+)"', source))
+    described = set(re.findall(r'case "([\w.]+)":', display.read_text(encoding="utf-8")))
+    assert len(recorded) >= 10, recorded  # the pattern still finds the calls
+    assert recorded - described == set()
+
+
+def test_the_question_log_names_sources_by_title_in_order(client, db):
+    admin = sign_in_as(client, db, "admin")
+    db.execute(
+        "INSERT INTO documents (filename, title, content_hash, file_type, status, original) "
+        "VALUES ('pto.md', 'Paid Time Off and Leave Policy', 'h1', 'md', 'ready', 'x'), "
+        "('faq.txt', NULL, 'h2', 'txt', 'ready', 'x')"
+    )
+    _question(db, admin, "Leave?", "answered", sources=["pto.md", "deleted-since.md", "faq.txt"])
+
+    [row] = client.get("/api/admin/questions").json()
+
+    # a title where there is one; the filename for a deleted or untitled document; the cited order kept
+    assert row["sources"] == ["Paid Time Off and Leave Policy", "deleted-since.md", "faq.txt"]

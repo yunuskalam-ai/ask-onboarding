@@ -55,6 +55,25 @@ const STATUS_WORD: Record<string, string> = {
 
 const text = (value: unknown) => (typeof value === "string" || typeof value === "number" ? String(value) : "?");
 
+type Change = { old?: unknown; new?: unknown };
+
+/** "role employee → manager, deactivated, new manager": what a People edit changed.
+ *  Departments and managers are stored by id, so they're named only as changed. */
+function describeChanges(changes: unknown): string {
+  if (!changes || typeof changes !== "object") return "";
+  const parts: string[] = [];
+  for (const [field, raw] of Object.entries(changes as Record<string, Change>)) {
+    const change = raw ?? {};
+    if (field === "role") parts.push(`role ${text(change.old)} → ${text(change.new)}`);
+    else if (field === "name") parts.push(`name ${text(change.old)} → ${text(change.new)}`);
+    else if (field === "active") parts.push(change.new ? "reactivated" : "deactivated");
+    else if (field === "department_id") parts.push("new department");
+    else if (field === "manager_id") parts.push("new manager");
+    else parts.push(field);
+  }
+  return parts.join(", ");
+}
+
 /** "Chrome 131 on Windows", or whichever half is known, or a dash. */
 export function describeClient(entry: Pick<AuditEntry, "browser" | "os">): string {
   if (entry.browser && entry.os) return `${entry.browser} on ${entry.os}`;
@@ -71,8 +90,22 @@ export function describeAudit(entry: AuditEntry): string {
       return "Signed out";
     case "document.upload":
       return d.unchanged ? `Re-uploaded ${text(d.filename)} (unchanged)` : `Uploaded ${text(d.filename)}`;
-    case "user.role":
+    case "document.delete":
+      return `Deleted ${text(d.filename)}`;
+    case "user.add":
+      return `Added ${text(d.user)} as ${text(d.role)}`;
+    case "user.change": {
+      const what = describeChanges(d.changes);
+      return what ? `Updated ${text(d.user)}: ${what}` : `Updated ${text(d.user)}`;
+    }
+    case "user.role": // entries written before people management (Phase 2, PR #24)
       return `Changed ${text(d.user)} from ${text(d.old)} to ${text(d.new)}`;
+    case "department.add":
+      return `Added the ${text(d.name)} department`;
+    case "department.rename":
+      return `Renamed the ${text(d.old)} department to ${text(d.new)}`;
+    case "department.delete":
+      return `Deleted the ${text(d.name)} department`;
     case "ticket.create":
       return `Opened ticket #${text(d.ticket)}: ${text(d.title)}`;
     case "ticket.status":
