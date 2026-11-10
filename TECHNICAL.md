@@ -98,7 +98,7 @@ All tables are in [schema.sql](backend/app/schema.sql), which runs on every star
 
 | Table | Purpose | Key columns and rules |
 | --- | --- | --- |
-| `documents` | One row per uploaded file | `filename` UNIQUE (re-uploading replaces); `content_hash` (SHA-256); `status` processing / ready / failed; `error`; `original` (the file, BYTEA); `pages` (JSONB text per page, for highlighting) |
+| `documents` | One row per uploaded file | `filename` UNIQUE (re-uploading replaces); `title` (readable: a Markdown file's first `# ` heading, else the first line, ALL CAPS tidied; backfilled for older documents on start); `content_hash` (SHA-256); `status` processing / ready / failed; `error`; `original` (the file, BYTEA); `pages` (JSONB text per page, for highlighting) |
 | `chunks` | Searchable passages | `document_id` (cascade); `chunk_index`; `page`; `start_char` / `end_char` (offsets into that page); `text`; `embedding vector(384)` with an **HNSW** cosine index; `tsv` generated full-text vector with a **GIN** index |
 | `tickets` | Help-desk tickets | `title`, `question`, `summary`, `user_name`; `status` open / in_progress / resolved / closed; `created_by` (Phase 2; NULL for older tickets); `created_at`, `updated_at` |
 | `ticket_events` *(Phase 2)* | Every status change or note | `ticket_id` (cascade), `user_id` (set NULL), `user_name` (kept if the user is deleted), `from_status`, `to_status`, `note` |
@@ -230,7 +230,9 @@ Sources are wrapped in `<source id="n" file="…" page="…">`. A `</source>` in
 
 **Refusal detection** (`is_no_answer`): the exact sentence, with small variations allowed, or an *uncited* answer that paraphrases a refusal.
 
-**Citations:** only the sources the answer actually cited are returned, in citation order.
+**Citations:** only the sources the answer actually cited are returned, in citation order, each with the document's title.
+
+**The source panel** shows a Markdown document formatted: two private-use marker characters are placed around the cited range (moved past a heading, bullet, quote or table-row prefix so the line keeps its meaning), and a small rehype plugin ([citedPassage.ts](frontend/src/citedPassage.ts)) turns the text between them into `<mark>` and tags the paragraphs, list items, headings or cells it touches as `cited`. Text files and PDFs are shown as text with the passage marked.
 
 **The models** ([llm.py](backend/app/chat/llm.py)):
 - **Ollama** (default): `/api/chat` with streaming, `temperature 0.1`, `num_ctx 8192`, `keep_alive 30m`. All requests go through one helper, and `OLLAMA_URL` must be `http(s)://`.

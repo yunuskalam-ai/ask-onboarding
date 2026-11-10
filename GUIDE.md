@@ -51,7 +51,7 @@ At the top right are your initials. Click them to **sign out**. Next to them:
 
 On **Chat**, type a question the way you'd ask a colleague. While the assistant works, **three moving dots** show it's searching. The answer then appears word by word, usually within 10–20 seconds on this server.
 
-- Click a **[number]** to open the source with the passage highlighted.
+- Under each answer, its sources are listed by document title. Click one, or a **[number]** in the answer, to open the document beside the chat, formatted, with the cited passage marked.
 - If the answer is **"I couldn't find this in the company documents"**, you'll see **"Want the help desk to answer this?"**. Click **Yes, open a ticket**. The assistant writes a title and summary for you; check them, edit if needed, and click **Create ticket**. Nothing is sent until you confirm.
 
 ### Tickets

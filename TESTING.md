@@ -2,15 +2,15 @@
 
 How Ask Onboarding is tested, what the tests prove, the **negative and security tests** with their results, and what is *not* covered automatically.
 
-Every number below comes from a real run on 10 Nov 2026 (last updated with the YK Labs rename). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
+Every number below comes from a real run on 10 Nov 2026 (last updated with the chat UI refresh). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) re-runs everything on every pull request.
 
 ## Results at a glance
 
 | Check | Tool | Result |
 | --- | --- | --- |
-| Backend tests | pytest | **460 passed**, 0 failed |
+| Backend tests | pytest | **471 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
-| Frontend tests | vitest | **95 passed**, 0 failed |
+| Frontend tests | vitest | **104 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
 | Python types | mypy | 0 errors in 36 files |
@@ -316,4 +316,4 @@ From `pytest --cov` (statements and branches):
 | `app/api/documents.py` | 95% | the default embedder getter, a document deleted mid-request |
 | `app/chat/llm.py` | 94% | the defensive "unknown provider" branches (settings validation now rejects these at startup) and one stream-closing edge |
 | `app/config.py`, `app/db.py`, `app/reindex.py` | 88–91% | `if __name__ == "__main__"` and error branches for impossible states |
-| **Total** | **97.3%** | |
+| **Total** | **97.2%** | |
