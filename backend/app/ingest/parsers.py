@@ -73,3 +73,33 @@ def _decode_text(data: bytes) -> str:
 def _normalise_newlines(text: str) -> str:
     # Windows line endings would shift every offset after them by one.
     return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+# Small words stay lower case in titles converted from ALL CAPS ("LONDON AND MANCHESTER").
+_SMALL_WORDS = {"a", "an", "and", "at", "by", "for", "in", "of", "on", "or", "the", "to", "with", "your"}
+
+
+def _from_all_caps(line: str) -> str:
+    words = []
+    for i, word in enumerate(line.split()):
+        lower = word.lower()
+        if i > 0 and lower in _SMALL_WORDS:
+            words.append(lower)
+        elif len(word.strip(":,.")) <= 3:
+            words.append(word)  # acronyms: FAQ, IT, VPN
+        else:
+            words.append("-".join(part.capitalize() for part in lower.split("-")))
+    return " ".join(words)
+
+
+def title_of(filename: str, pages: list[Page]) -> str:
+    """A readable title: a Markdown file's first '# ' heading, otherwise the first
+    line of text (converted from ALL CAPS), otherwise the filename tidied up."""
+    first_lines = [line.strip() for line in (pages[0].text if pages else "").splitlines()[:40] if line.strip()]
+    if PurePath(filename).suffix.lower() in (".md", ".markdown"):
+        heading = next((line[2:].strip() for line in first_lines if line.startswith("# ")), "")
+    else:
+        heading = first_lines[0] if first_lines else ""
+    if heading and len(heading) <= 120:
+        return _from_all_caps(heading) if heading.isupper() else heading
+    return PurePath(filename).stem.replace("-", " ").replace("_", " ").capitalize()

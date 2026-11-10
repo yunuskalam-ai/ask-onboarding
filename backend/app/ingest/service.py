@@ -23,7 +23,7 @@ from app.config import settings
 from app.db import Connection, one
 from app.ingest.chunker import chunk_pages
 from app.ingest.embedder import embed_passages
-from app.ingest.parsers import EmptyDocument, file_type, parse
+from app.ingest.parsers import EmptyDocument, Page, file_type, parse, title_of
 
 log = logging.getLogger(__name__)
 
@@ -129,8 +129,12 @@ def process_document(
                 ],
             )
         conn.execute(
-            "UPDATE documents SET status = 'ready', pages = %s, updated_at = now() WHERE id = %s",
-            (Jsonb([{"number": p.number, "text": p.text} for p in pages]), document_id),
+            "UPDATE documents SET status = 'ready', pages = %s, title = %s, updated_at = now() WHERE id = %s",
+            (
+                Jsonb([{"number": p.number, "text": p.text} for p in pages]),
+                title_of(doc["filename"], pages),
+                document_id,
+            ),
         )
     return None
 
@@ -159,3 +163,12 @@ def _mark_failed(conn: Connection, document_id: int, expected_hash: str, message
         """,
         (message, document_id, expected_hash),
     )
+
+
+def backfill_titles(conn: Connection) -> int:
+    """Give ready documents processed before titles existed their title. Returns how many."""
+    rows = conn.execute("SELECT id, filename, pages FROM documents WHERE status = 'ready' AND title IS NULL").fetchall()
+    for row in rows:
+        pages = [Page(p["number"], p["text"]) for p in row["pages"] or []]
+        conn.execute("UPDATE documents SET title = %s WHERE id = %s", (title_of(row["filename"], pages), row["id"]))
+    return len(rows)

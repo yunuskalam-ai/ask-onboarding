@@ -23,7 +23,7 @@ from app.config import settings
 from app.db import connect, one
 from app.ingest.embedder import embed_passages
 from app.ingest.parsers import SUPPORTED_EXTENSIONS
-from app.ingest.service import EmbedFn, process_document, save_upload
+from app.ingest.service import EmbedFn, backfill_titles, process_document, save_upload
 from app.notifications import alert_admins, flush_pending, prune
 
 log = logging.getLogger(__name__)
@@ -62,6 +62,13 @@ def _run() -> None:
     except Exception as exc:
         log.exception("Warming up the model failed")
         alert_admins(settings.database_url, "model", "The answer model isn't ready", str(exc), "warning")
+    try:
+        with connect(settings.database_url) as conn:
+            titled = backfill_titles(conn)
+        if titled:
+            log.info("Gave %d documents a title", titled)
+    except Exception:
+        log.exception("Backfilling document titles failed")
     try:
         with connect(settings.database_url) as conn:
             removed = prune(conn)

@@ -171,3 +171,7 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 UPDATE notifications SET last_seen_at = at WHERE last_seen_at IS NULL;
 -- System alerts open their detail page (older ones pointed at the overview).
 UPDATE notifications SET link = '/alerts/' || id WHERE kind = 'system.alert' AND link = '/overview';
+
+-- A readable title for each document ("Paid Time Off and Leave Policy"),
+-- set when it is processed; older documents get it on the next start.
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS title TEXT;
