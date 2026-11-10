@@ -10,7 +10,7 @@ Every number below comes from a real run on 10 Nov 2026 (last updated with the c
 | --- | --- | --- |
 | Backend tests | pytest | **471 passed**, 0 failed |
 | Backend coverage | pytest-cov, branches included | **97.2%** (the build fails below 95%) |
-| Frontend tests | vitest | **104 passed**, 0 failed |
+| Frontend tests | vitest | **108 passed**, 0 failed |
 | Python lint, including security rules | ruff with bandit (`S`) rules | 0 findings |
 | Python formatting | ruff format | all 48 files formatted |
 | Python types | mypy | 0 errors in 36 files |
@@ -228,6 +228,7 @@ Checked end to end on the real stack: Sam opened a ticket and Jordan resolved it
 | A manager changing their **own** ticket | 403; their manager or an admin can | `test_a_manager_cannot_change_their_own_ticket` |
 | Notifications for another team's manager, or an inactive manager | none | `test_another_teams_manager_hears_nothing`, `test_inactive_people_receive_nothing` |
 | A loop or a missing manager in the data shown on the People page | everyone still shown once, no hang | `buildTree` tests |
+| Saving a People edit form with nothing changed, or clearing a department | Save stays disabled; only changed fields are sent, a cleared field as `null` | `changesFrom` tests |
 
 ### Alert details and live checks ([test_alerts.py](backend/tests/test_alerts.py))
 

@@ -74,6 +74,10 @@ function UserMenu() {
             <span className="muted small">{user.email}</span>
             <span className={`role-pill role-${user.role}`}>{ROLE_LABEL[user.role]}</span>
           </div>
+          <div className="menu-row">
+            <span>Theme</span>
+            <ThemeSwitch />
+          </div>
           <button role="menuitem" onClick={onSignOut}>
             Sign out
           </button>
@@ -104,7 +108,7 @@ export default function AppHeader() {
         </nav>
       )}
       <div className="topbar-end">
-        <ThemeSwitch />
+        {!user && <ThemeSwitch />}
         {user && <NotificationBell key={user.id} />}
         {user ? (
           <UserMenu />

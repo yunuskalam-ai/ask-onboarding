@@ -78,7 +78,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <section className="page">
+    <section className="page wide">
       <h1>Documents</h1>
       {canUpload ? (
         <p className="muted">

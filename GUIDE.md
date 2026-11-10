@@ -43,9 +43,11 @@ The demo accounts are:
 - **Jordan Lee** (manager)
 - **Alex Morgan** (admin)
 
-At the top right are your initials. Click them to **sign out**. Next to them:
-- the **bell** shows your notifications
-- the **☀ ☾ ◐** switch picks light mode, dark mode, or whatever your computer uses
+At the top right are your initials. Click them to:
+- **sign out**
+- pick the **theme** with the **☀ ☾ ◐** switch: light mode, dark mode, or whatever your computer uses (before you sign in, the switch sits in the top bar)
+
+Next to your initials, the **bell** shows your notifications. On a phone, the page links sit in a row under the top bar; swipe it to see them all.
 
 ### Asking a question (everyone)
 
@@ -68,6 +70,7 @@ On **Chat**, type a question the way you'd ask a colleague. While the assistant 
   | **Closed** | Finished; can be reopened |
 
 - **Every change is kept in the ticket's history:** who, when, and their note.
+- Tickets show as a **compact list**: title, who asked, how long ago, and the status. Click one to open it: the question, the history and, for managers and admins, the form to move it along. A link from a notification opens that ticket.
 - The **tabs** at the top filter by status and show how many tickets are in each.
 
 ### Notifications
@@ -95,8 +98,8 @@ Employees don't need this tab: they get their answers, with links to the exact s
 
 Where admins run the organisation in the app:
 - **Add a person:** name, work email, role, department and who they report to. They can sign in straight away.
-- **Change** anyone's role, department or manager from the table. Changes apply immediately, even to someone signed in.
-- **Deactivate** someone who has left: they're signed out at once, can't sign in, and receive nothing, but their tickets and history stay. Reactivate them any time.
+- **Change** someone: click **Edit** on their row, change their role, department, manager or status, then **Save changes** (or **Cancel**). Nothing changes until you save, and the change applies immediately, even to someone signed in.
+- **Deactivate** someone who has left: untick **Active** in their edit form. The app warns you first and the button turns red (**Deactivate and save**). They're signed out at once, can't sign in, and receive nothing, but their tickets and history stay. Reactivate them any time.
 - **Departments:** add, rename, or delete an empty one.
 - **Team structure** shows who reports to whom.
 
