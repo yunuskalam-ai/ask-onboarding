@@ -35,6 +35,7 @@ services:
     volumes:
       - ./sample_docs:/app/sample_docs:ro
       - ./eval:/app/eval # the eval script runs here and writes eval/results/
+      - geoip:/data/geoip # the IP location database, downloaded once a month
     depends_on:
       db:
         condition: service_healthy
@@ -80,5 +81,6 @@ services:
     restart: "no"
 
 volumes:
+  geoip:
   db_data:
   ollama_models:

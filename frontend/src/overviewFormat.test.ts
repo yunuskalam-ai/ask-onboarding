@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuditEntry } from "./api";
-import { count, describeAudit, hours, localDate, percent, seconds } from "./overviewFormat";
+import { count, describeAudit, describeClient, hours, localDate, percent, seconds } from "./overviewFormat";
 
 const entry = (action: string, details: Record<string, unknown> = {}): AuditEntry => ({
   id: 1,
@@ -8,6 +8,20 @@ const entry = (action: string, details: Record<string, unknown> = {}): AuditEntr
   actor: "Alex",
   action,
   details,
+  ip: null,
+  location: null,
+  browser: null,
+  os: null,
+  device: null,
+});
+
+describe("describeClient", () => {
+  it.each([
+    ["Chrome 131", "Windows", "Chrome 131 on Windows"],
+    ["curl 8", null, "curl 8"],
+    [null, "Android 15", "Android 15"],
+    [null, null, "–"],
+  ])("%s / %s", (browser, os, expected) => expect(describeClient({ browser, os })).toBe(expected));
 });
 
 describe("formatting", () => {

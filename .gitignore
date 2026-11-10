@@ -6,6 +6,9 @@
 # Private working notes (raw material for AI_LOG.md)
 notes/
 
+# Local runtime data (the IP location database)
+data/
+
 # Python
 __pycache__/
 *.py[cod]

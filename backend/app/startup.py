@@ -6,6 +6,7 @@
 2. Warm up the local model, so the first question doesn't wait for the
    model to load into memory.
 3. Delete notifications older than 180 days.
+4. Download the IP location database if it is missing or a month old.
 
 All are best-effort: a failure is logged and sent to the admins as an alert,
 and the API keeps serving.
@@ -18,6 +19,7 @@ import logging
 import threading
 from pathlib import Path
 
+from app import geoip
 from app.chat.llm import warm_up
 from app.config import settings
 from app.db import connect, one
@@ -76,6 +78,10 @@ def _run() -> None:
             log.info("Deleted %d notifications older than 180 days", removed)
     except Exception:
         log.exception("Pruning old notifications failed")
+    try:
+        geoip.refresh(Path(settings.geoip_path))
+    except Exception:
+        log.warning("No IP location database: the audit log shows IPs without a place", exc_info=True)
 
 
 ALERT_RETRY_SECONDS = 30

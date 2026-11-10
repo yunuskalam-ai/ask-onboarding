@@ -6,7 +6,8 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     EMBEDDING_CACHE_DIR=/models \
-    HF_HUB_DISABLE_TELEMETRY=1
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    GEOIP_PATH=/data/geoip/dbip-city-lite.mmdb
 
 WORKDIR /app/backend
 
@@ -23,7 +24,8 @@ RUN python -c "from fastembed import TextEmbedding; TextEmbedding('${EMBEDDING_M
 # Run as a normal user, not root: a bug in the app can't change the image or
 # the system. uid 1000 matches the usual first user on a Linux host, so the
 # eval script can still write eval/results/ through the bind mount.
-RUN useradd --create-home --uid 1000 app && chown -R app:app /models /app
+# /data/geoip holds the IP location database (a volume, refreshed monthly).
+RUN useradd --create-home --uid 1000 app && mkdir -p /data/geoip && chown -R app:app /models /app /data
 COPY --chown=app:app backend/ .
 # The project docs, at the same paths as in the repo (app/api/docs.py lists them).
 COPY --chown=app:app README.md ARCHITECTURE.md TECHNICAL.md GUIDE.md TESTING.md AI_LOG.md /app/

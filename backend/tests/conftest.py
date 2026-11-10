@@ -41,6 +41,23 @@ def _keep_tests_off_the_dev_database():
     app.dependency_overrides.pop(get_database_url, None)
 
 
+@pytest.fixture(autouse=True)
+def _no_downloads(monkeypatch, tmp_path):
+    """Tests never download the IP location database (127 MB): any attempt
+    fails, and the app looks for it in an empty folder, so every test sees
+    the same "no database" state whatever the developer has locally."""
+    from dataclasses import replace
+
+    from app import auth, geoip, startup
+
+    def refuse(*args, **kwargs):
+        raise OSError("tests must not download anything")
+
+    monkeypatch.setattr(geoip, "urlopen", refuse)
+    for module in (auth, startup):
+        monkeypatch.setattr(module, "settings", replace(module.settings, geoip_path=str(tmp_path / "geoip.mmdb")))
+
+
 # Tests use their own database, <name>_test, so they never touch dev data.
 
 

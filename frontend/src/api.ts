@@ -292,6 +292,11 @@ export type AuditEntry = {
   actor: string | null;
   action: string;
   details: Record<string, unknown>;
+  ip: string | null;
+  location: string | null; // "Dubai, United Arab Emirates", "Private network", or null if unknown
+  browser: string | null; // "Chrome 131"
+  os: string | null; // "Windows", "Android 15"
+  device: string | null; // "Desktop", "Phone", "Tablet" or "Script"
 };
 
 /** Days are counted in the viewer's time zone (an IANA name such as "Asia/Dubai"). */

@@ -9,7 +9,7 @@ This page answers the brief's six questions. **[TECHNICAL.md](TECHNICAL.md)** is
 | | Phase 1: the brief | Phase 2: added since |
 | --- | --- | --- |
 | Answers | upload, cited streamed answers, "not in the documents", ticket by tool call | typing indicator |
-| Quality | 20-question eval, hybrid search | CI, 471 + 108 tests, 97% coverage, [TESTING.md](TESTING.md) |
+| Quality | 20-question eval, hybrid search | CI, 509 + 112 tests, 97% coverage, [TESTING.md](TESTING.md) |
 | People | – | sign-in, three roles enforced by the server; departments and reporting lines (managers handle their team's tickets); People page |
 | Operations | `docker compose up` | ticket workflow, notifications and admin alerts, admin Overview (KPIs, question log, audit), Docs page, security hardening, public deployment |
 
@@ -81,7 +81,7 @@ Checked by stopping the Ollama container:
 - **Every pull request runs the gates in CI:**
   - lint, including security rules
   - type checks
-  - 471 backend and 108 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
+  - 509 backend and 112 frontend tests (**negative and security tests included**, catalogued with results in [TESTING.md](TESTING.md))
   - a **95% coverage floor**
   - dependency audits
   - both Docker images

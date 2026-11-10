@@ -15,6 +15,7 @@ from app import diagnostics
 from app.db import Connection, one
 from app.deps import Admin, get_conn, get_database_url
 from app.runbook import runbook_for
+from app.useragent import describe
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -216,18 +217,27 @@ class AuditOut(BaseModel):
     actor: str | None  # None if the person was deleted
     action: str
     details: dict[str, Any]
+    ip: str | None
+    location: str | None  # "Dubai, United Arab Emirates", "Private network", or None if unknown
+    browser: str | None  # "Chrome 131"
+    os: str | None  # "Windows", "Android 15"
+    device: str | None  # "Desktop", "Phone", "Tablet" or "Script"
 
 
 @router.get("/audit")
 def audit_log(admin: Admin, conn: Conn, limit: Limit = 50, offset: Offset = 0) -> list[AuditOut]:
     """Newest first: sign-ins, uploads, role and ticket changes."""
     rows = conn.execute(
-        "SELECT a.id, a.at, u.name AS actor, a.action, a.details "
+        "SELECT a.id, a.at, u.name AS actor, a.action, a.details, host(a.ip) AS ip, a.location, a.user_agent "
         "FROM audit_log a LEFT JOIN users u ON u.id = a.user_id "
         "ORDER BY a.at DESC, a.id DESC LIMIT %s OFFSET %s",
         (limit, offset),
     )
-    return [AuditOut(**r) for r in rows]
+    out = []
+    for r in rows:
+        device = describe(r.pop("user_agent"))
+        out.append(AuditOut(**r, browser=device.browser, os=device.os, device=device.kind))
+    return out
 
 
 def _rounded(value: float | None) -> int | None:

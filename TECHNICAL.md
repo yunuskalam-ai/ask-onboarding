@@ -105,7 +105,7 @@ All tables are in [schema.sql](backend/app/schema.sql), which runs on every star
 | `users` *(Phase 2)* | People | `email` UNIQUE, lowercase; `name`; `role` employee / manager / admin; `active` (inactive people can't sign in and receive nothing); `department_id`; `manager_id` (reporting line; a check stops reporting to yourself, the API stops longer loops) |
 | `departments` *(Phase 2)* | Departments | `name`, unique ignoring case |
 | `sessions` *(Phase 2)* | Signed-in browsers | `token_hash` (SHA-256 of the cookie; the token itself is never stored); `user_id` (cascade); `expires_at` (7 days) |
-| `audit_log` *(Phase 2)* | Who did what | `user_id` (set NULL), `action`, `details` (JSONB). Actions: `sign_in`, `sign_out`, `document.upload`, `user.role`, `ticket.create`, `ticket.status` |
+| `audit_log` *(Phase 2)* | Who did what, from where | `user_id` (set NULL), `action`, `details` (JSONB), `ip` (INET), `location` (the city and country at the time), `user_agent` (raw, up to 400 characters). Actions: `sign_in`, `sign_out`, `document.upload`, `user.role`, `ticket.create`, `ticket.status` |
 | `questions` *(Phase 2)* | The question log | `user_id`, `user_name`, `question`, `outcome` (answered / low_score / not_in_sources / refused / error / stopped), `best_score`, `sources` (cited files), `first_token_ms`, `total_ms` |
 | `notifications` *(Phase 2)* | One row per event | `kind` (ticket.opened / ticket.updated / system.alert), `severity` (info / warning / error), `title`, `body`, `link` (an in-app path), `ticket_id` (cascade), `dedupe_key` (system alerts) |
 | `notification_recipients` *(Phase 2)* | Who received it | (`notification_id`, `user_id`) primary key; `read_at` (NULL = unread); a partial index on unread rows per user |
@@ -151,7 +151,7 @@ All endpoints are under `/api`. The interactive OpenAPI docs are at `http://loca
 | `DELETE /departments/{id}` | **admin** | Delete an empty department (409 while it has people) |
 | `GET /admin/overview?days&tz` | **admin** | KPIs for the last N days (1–365), with days in time zone `tz` |
 | `GET /admin/questions?limit&offset` | **admin** | The question log, newest first |
-| `GET /admin/audit?limit&offset` | **admin** | The audit log, newest first |
+| `GET /admin/audit?limit&offset` | **admin** | The audit log, newest first, with `ip`, `location`, `browser`, `os` and `device` |
 | `GET /admin/status` | **admin** | Live checks: database, answer model, document library |
 | `GET /admin/alerts/{id}` | **admin** | One system alert: first and last seen, how many times, what it means, likely causes, fix steps with commands, live checks, and whether it has recovered |
 | `GET /admin/docs` | **admin** | The project documents and whether each is available |
@@ -341,6 +341,23 @@ Clicking a system alert opens `/alerts/<id>`.
 
 The chart's colours were checked with a colour-blindness validator in both themes. The chart has a legend, a hover readout and a table view. The **question log** and **audit log** are paged, newest first.
 
+### Where an audited action came from
+
+Each audit entry records the client's **IP address**, its **location** and its **browser string**:
+
+- **The IP:**
+  - Caddy (deployed) replaces any `X-Forwarded-For` a visitor sends with the address it actually sees. That was checked with the same Caddy version: a forged `8.8.8.8` was dropped.
+  - nginx trusts the private Docker hops (`set_real_ip_from`) and passes the result on as `X-Real-IP`.
+  - The API ([client_info.py](backend/app/client_info.py)) believes that header **only from a private or loopback peer**. When deployed, the API has no public port, so only nginx can be that peer. A middleware keeps the IP and browser for the request, so `auth.record()` adds them without every endpoint passing the request along.
+- **The location** ([geoip.py](backend/app/geoip.py)):
+  - It's looked up **offline** in DB-IP's free *IP to City Lite* database (CC BY 4.0; the Overview credits it). No IP leaves the server.
+  - The 127 MB file lives on the api container's `geoip` volume. It's downloaded on start when missing or more than 30 days old, falling back to last month's edition early in a month.
+  - The download goes to a temporary file and must open as a database before it replaces the old one.
+  - Office and local addresses show as *Private network*.
+  - The location is stored with the entry: where someone was **then**, not where that IP is today.
+- **Browser, system and device** ([useragent.py](backend/app/useragent.py)) are worked out when the log is read, from the raw string, with a short ordered list of patterns: "Chrome 131 on Windows", "Phone". Unknown parts show as a dash, never a guess. Because the raw string is kept, better rules apply to old entries too.
+- **Entries from before this change**, and actions with no request (a background job), have none of these fields.
+
 ## 13. Project docs page (Phase 2)
 
 [docs.py](backend/app/api/docs.py) serves a **fixed list** of Markdown files: Guide, README, Architecture, Technical reference, Testing, Deploying and the AI log. It also serves images whose names match `^[a-z0-9][a-z0-9-]*\.(png|svg)$` directly inside `docs/`. Names are looked up, never joined into paths from input, so nothing else can be read. Images are served with `nosniff` and a CSP `sandbox`.
@@ -378,6 +395,7 @@ The page renders Markdown with `react-markdown` and `remark-gfm`, which build Re
 | Session theft through script (XSS) | `HttpOnly` cookie; strict CSP (`script-src 'self'`); React escapes output; Markdown rendered as elements | nginx, frontend |
 | Cross-site request forgery | `SameSite=Lax` **and** the Origin check on every state-changing request | `security.py` |
 | Clickjacking | `X-Frame-Options: DENY`, `frame-ancestors 'none'` | nginx |
+| A forged IP in the audit log | Caddy replaces `X-Forwarded-For`; the API believes `X-Real-IP` only from a private peer (nginx) | Caddy, nginx, `client_info.py` |
 | Privilege escalation | Role checked on the server for every endpoint; the owner comes from the session; the last admin is protected | `deps.py`, routers |
 | Reading others' data | Ticket lists filtered by owner; notifications only through the recipients table (404 otherwise) | `tickets.py`, `notifications.py` |
 | SQL injection | Parameters everywhere; the only interpolations are constant column lists, marked and explained | all SQL |
@@ -405,6 +423,7 @@ Every setting has a default, so no `.env` file is needed. Copy [.env.example](.e
 | `TOP_K`, `SEARCH_MODE`, `MIN_SCORE` | `5`, `hybrid`, `0.55` | `SEARCH_MODE` is `vector` or `hybrid` |
 | `MAX_UPLOAD_MB` | `20` | nginx allows 25 MB for form overhead |
 | `SEED_SAMPLE_DOCS`, `SEED_DEMO_USERS` | `true`, `true` | Only ever into empty tables |
+| `GEOIP_PATH` | `/data/geoip/dbip-city-lite.mmdb` in Docker | The IP location database; downloaded there on start when missing or a month old |
 | `COOKIE_SECURE` | `false` | `true` on the deployed site (the production override sets it) |
 | `DATABASE_URL` | built by compose | – |
 | `SAMPLE_DOCS_DIR`, `PROJECT_DIR`, `EMBEDDING_CACHE_DIR` | repo paths | Set by the images |
@@ -448,4 +467,6 @@ See [TESTING.md](TESTING.md) for the strategy, the catalogue of negative and sec
 - **No rate limiting:** the deployed demo is behind a site-wide password.
 - **Alerts queued while the database is down are kept in memory,** so they're lost if the API restarts before it recovers.
 - **Notifications use polling,** not server push.
+- **The audit log is kept indefinitely,** IP addresses included. A real deployment should set a retention period to match its privacy policy.
+- **The IP location database refreshes only when the API starts,** so a server that runs for months without a restart keeps an older edition.
 - **No browser end-to-end tests in CI;** they were run locally with headless Edge (TESTING.md).

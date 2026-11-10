@@ -175,3 +175,9 @@ UPDATE notifications SET link = '/alerts/' || id WHERE kind = 'system.alert' AND
 -- A readable title for each document ("Paid Time Off and Leave Policy"),
 -- set when it is processed; older documents get it on the next start.
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS title TEXT;
+
+-- Where each audited action came from: the client's IP, the city and country
+-- it was in at the time (offline lookup, app/geoip.py), and the browser string.
+ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS ip INET;
+ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS user_agent TEXT;

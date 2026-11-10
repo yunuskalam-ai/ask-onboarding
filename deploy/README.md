@@ -90,7 +90,7 @@ The first start builds the images and downloads the model, about 10–15 minutes
 | Stop / start | `sudo docker compose stop` / `sudo docker compose up -d` |
 | Change the password | Delete `.env`, run `bash deploy/setup.sh` again, then `sudo docker compose up -d --force-recreate caddy` |
 
-Documents, tickets and the model are kept in Docker volumes, so they survive restarts. Every service restarts automatically, including after a reboot.
+Documents, tickets, the model and the IP location database (for the audit log; it downloads itself on the first start and refreshes monthly, about 60 MB) are kept in Docker volumes, so they survive restarts. Every service restarts automatically, including after a reboot.
 
 ## Troubleshooting
 

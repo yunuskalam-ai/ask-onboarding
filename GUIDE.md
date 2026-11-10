@@ -117,7 +117,7 @@ A one-page health check for the last 7, 30 or 90 days:
 | **Questions per day** | Answered in green, not answered in orange |
 | **What the documents don't cover** | **The most-asked questions that got no answer. Each one is a document worth writing.** This is the most useful list for improving onboarding |
 | **How questions ended** | Answered, not in the documents, off-topic, and so on |
-| **Tickets by status**, **recent questions** and the **audit log** | Who signed in, uploaded, changed roles or updated tickets, and when |
+| **Tickets by status**, **recent questions** and the **audit log** | Who signed in, uploaded, changed roles or updated tickets, and when. For each one, the audit log also shows **where from**: the city and country, the IP address, the browser and system ("Chrome 131 on Windows"), and the kind of device (desktop, phone, tablet, or a script). An unfamiliar city or device next to a sign-in is worth a look |
 
 ### Docs (admins)
 
@@ -138,6 +138,7 @@ The project's own documentation, readable inside the app: this guide, the README
 - **Admins can see the questions people ask, and who asked them** (in the Overview). That's how gaps in the documents are found. Tell employees this.
 - **Tickets** are visible to the person who opened them and to managers and admins.
 - **Notifications** are deleted after 180 days. Questions, tickets and the audit log are kept.
+- **The audit log records the IP address and rough location** of each sign-in and change. The location is looked up on your own server, so no address is sent to anyone. IP addresses are personal data: say so in your privacy notice and decide how long to keep them.
 - **Sign-in** in this demo has no passwords, so the public demo is protected by a single site password. A real deployment would use the company's own login.
 
 ## When something goes wrong

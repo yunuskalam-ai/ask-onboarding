@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api import admin, auth, chat, docs, documents, notifications, retrieve, tickets, users
 from app.auth import place_existing_demo_users, rename_demo_domain, seed_demo_users
+from app.client_info import ClientInfoMiddleware
 from app.config import settings
 from app.db import connect, init_schema
 from app.deps import get_database_url
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Ask Onboarding API", lifespan=lifespan)
 app.add_middleware(OriginCheckMiddleware)
+app.add_middleware(ClientInfoMiddleware)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(admin.router)

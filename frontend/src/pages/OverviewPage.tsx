@@ -11,7 +11,7 @@ import {
   type Overview,
 } from "../api";
 import HealthChecks from "../components/HealthChecks";
-import { OUTCOME_LABEL, OUTCOME_ORDER, count, describeAudit, hours, localDate, percent, seconds } from "../overviewFormat";
+import { OUTCOME_LABEL, OUTCOME_ORDER, count, describeAudit, describeClient, hours, localDate, percent, seconds } from "../overviewFormat";
 
 const PERIODS = [7, 30, 90];
 const PAGE = 25;
@@ -347,22 +347,51 @@ export default function OverviewPage() {
       <div className="panel">
         <h2>Audit log</h2>
         {audit.error && <div className="notice error">{audit.error}</div>}
-        {audit.items && (
-          <ul className="audit">
-            {audit.items.map((e) => (
-              <li key={e.id}>
-                <span className="muted small nowrap">{when.format(new Date(e.at))}</span>
-                <strong>{e.actor ?? "Deleted user"}</strong>
-                <span>{describeAudit(e)}</span>
-              </li>
-            ))}
-          </ul>
+        {audit.items?.length === 0 && <p className="muted">Nothing recorded yet.</p>}
+        {audit.items && audit.items.length > 0 && (
+          <div className="table-scroll">
+            <table className="docs compact audit">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>What</th>
+                  <th>Location</th>
+                  <th>IP address</th>
+                  <th>Browser and system</th>
+                  <th>Device</th>
+                </tr>
+              </thead>
+              <tbody>
+                {audit.items.map((e) => (
+                  <tr key={e.id}>
+                    <td className="nowrap">{when.format(new Date(e.at))}</td>
+                    <td className="nowrap">
+                      <strong>{e.actor ?? "Deleted user"}</strong>
+                    </td>
+                    <td>{describeAudit(e)}</td>
+                    <td>{e.location ?? (e.ip ? <span className="muted">Unknown</span> : "–")}</td>
+                    <td className="mono">{e.ip ?? "–"}</td>
+                    <td>{describeClient(e)}</td>
+                    <td>{e.device ?? "–"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {audit.more && (
           <button className="link" onClick={audit.loadMore}>
             Load more
           </button>
         )}
+        <p className="muted small">
+          Locations are looked up on our own server, never sent anywhere:{" "}
+          <a href="https://db-ip.com" target="_blank" rel="noreferrer">
+            IP Geolocation by DB-IP
+          </a>
+          .
+        </p>
       </div>
     </section>
   );
